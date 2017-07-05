@@ -1,0 +1,52 @@
+;; -*- emacs-lisp -*- <17/05/06 00:48:19 /Users/fjmt/.emacs.d/tramp>
+;; Tramp connection history.  Don't change this file.
+;; You can delete it, forcing Tramp to reapply the checks.
+
+((["ssh" "volumio" "volumio.local" nil nil]
+  ("uname" "Linux 4.4.9-v7+")
+  ("locale" "LC_ALL=en_US.utf8")
+  ("test" "test")
+  ("remote-path"
+   ("/bin" "/usr/bin" "/sbin" "/usr/sbin" "/usr/local/bin" "/usr/local/sbin"))
+  ("remote-shell" "/bin/sh")
+  ("perl-file-spec" t)
+  ("perl-cwd-realpath" t)
+  ("perl" "\\perl")
+  ("file-exists" "test -e")
+  ("readlink" "\\readlink")
+  ("stat" nil)
+  ("git" "\\git")
+  ("id" "/usr/bin/id")
+  ("gid-string" "volumio")
+  ("gid-integer" 1000)
+  ("uid-integer" 1000)
+  ("tmpdir" "/tmp")
+  ("touch-t" t)
+  ("touch" "\\touch"))
+ (["scp" nil "ssh" nil nil]
+  nil)
+ (["scp" nil "volumio.local" nil nil]
+  nil)
+ (["scp" nil "sudo" nil nil]
+  nil)
+ (["sudo" "root" "volumio.local" nil nil]
+  ("uname" "Linux 4.4.9-v7+")
+  ("locale" "LC_ALL=en_US.utf8")
+  ("test" "test")
+  ("remote-path"
+   ("/bin" "/usr/bin" "/sbin" "/usr/sbin" "/usr/local/bin" "/usr/local/sbin"))
+  ("remote-shell" "/bin/sh")
+  ("perl-file-spec" t)
+  ("perl-cwd-realpath" t)
+  ("perl" "\\perl")
+  ("readlink" "\\readlink")
+  ("stat" nil)
+  ("id" "/usr/bin/id")
+  ("gid-integer" 0)
+  ("gid-string" "root")
+  ("file-exists" "test -e")
+  ("git" "\\git")
+  ("uid-integer" 0)
+  ("tmpdir" "/tmp")
+  ("touch-t" t)
+  ("touch" "\\touch")))
