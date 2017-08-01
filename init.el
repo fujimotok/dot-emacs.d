@@ -35,6 +35,7 @@
     (async avy dash epl f git-commit helm-core magit-popup pkg-info popup s with-editor magit-find-file flycheck magit ace-link google-translate init-loader helm helm-gtags navi2ch markdown-mode git ggtags exec-path-from-shell color-theme-modern auto-complete)))
  '(scroll-bar-mode nil)
  '(tool-bar-mode nil))
+ '(menu-bar-mode nil)
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
