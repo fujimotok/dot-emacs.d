@@ -9,7 +9,7 @@
 (define-key global-map (kbd "M-r")     'helm-resume)
 (define-key global-map (kbd "C-M-h")   'helm-apropos)
 (define-key helm-map (kbd "C-h") 'delete-backward-char)
-(define-key helm-map (kbd "<tab>") 'helm-execute-persistent-action)
+(define-key helm-map (kbd "TAB") 'helm-execute-persistent-action)
 (define-key helm-map (kbd "C-z")  'helm-select-action)
 
 (add-hook 'shell-mode-hook (lambda() (helm-mode -1)))

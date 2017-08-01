@@ -16,6 +16,8 @@
                                           mode-line-misc-info) mode-line-misc-info)
           header-line-format which-func-header-line-format)))
 
+(require 'magit)
+
 ;; コントロールシーケンスを利用した色指定が使えるように
 (autoload 'ansi-color-for-comint-mode-on "ansi-color"
   "Set `ansi-color-for-comint-mode' to t." t)
