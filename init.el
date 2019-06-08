@@ -28,7 +28,7 @@
  '(initial-frame-alist (quote ((fullscreen . maximized))))
  '(package-selected-packages
    (quote
-    (switch-buffer-functions ace-jump-mode json-mode yafolding arduino-mode ssh popwin helm-rtags rtags dracula-theme powerline async avy dash epl f git-commit helm-core pkg-info s with-editor magit-find-file flycheck magit ace-link google-translate init-loader helm helm-gtags navi2ch markdown-mode git ggtags exec-path-from-shell auto-complete)))
+    (nyan-mode telephone-line switch-buffer-functions ace-jump-mode json-mode yafolding arduino-mode ssh popwin helm-rtags rtags dracula-theme powerline async avy dash epl f git-commit helm-core pkg-info s with-editor magit-find-file flycheck magit ace-link google-translate init-loader helm helm-gtags navi2ch markdown-mode git ggtags exec-path-from-shell auto-complete)))
  '(scroll-bar-mode nil)
  '(tool-bar-mode nil))
  '(menu-bar-mode nil)
