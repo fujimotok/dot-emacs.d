@@ -9,7 +9,7 @@
 (defface level2-active
   '((t (:foreground "black" :background "royal blue" :inherit mode-line))) "")
 (defface level2-inactive
-  '((t (:foreground "back" :background "grey11" :inherit mode-line-inactive))) "")
+  '((t (:foreground "black" :background "grey11" :inherit mode-line-inactive))) "")
 (defface level3-active
   '((t (:foreground "gray" :background "magenta" :inherit mode-line))) "")
 (defface level3-inactive
@@ -25,11 +25,15 @@
 ;; セパレータが途切れる場合に調整
 (setq telephone-line-height 26)
 
+(when (eq system-type 'darwin)
+  (setq telephone-line-height 20)
+  (setq ns-use-srgb-colorspace nil))
+
 ;; mode-lineにnyan-mode使うため
 (require 'nyan-mode)
 (nyan-mode t)
 ;; 背景がわかりづらいのでxpm画像を差し替え
-(setq +nyan-outerspace-image+ (concat +nyan-directory+ "img/outerspace2.xpm"))
+;; .emacs.d/elpa/nyan-modeXXXX/img/outspace.xpm non->#222244
 
 ;; 自作segment関数
 (telephone-line-defsegment* telephone-line-mule-info-segment ()
