@@ -25,13 +25,13 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(initial-frame-alist (quote ((fullscreen . maximized))))
+ '(initial-frame-alist (quote ((vertical-scroll-bars))))
+ '(menu-bar-mode nil)
  '(package-selected-packages
    (quote
-    (switch-buffer-functions ace-jump-mode json-mode yafolding arduino-mode ssh popwin helm-rtags rtags dracula-theme powerline async avy dash epl f git-commit helm-core pkg-info s with-editor magit-find-file flycheck magit ace-link google-translate init-loader helm helm-gtags navi2ch markdown-mode git ggtags exec-path-from-shell auto-complete)))
+    (open-in-msvs telephone-line nyan-mode emmet-mode web-mode company omnisharp csharp-mode eglot lsp-mode mozc-popup mozc-im mozc switch-buffer-functions ace-jump-mode json-mode yafolding arduino-mode ssh popwin helm-rtags rtags dracula-theme powerline async avy dash epl f git-commit helm-core pkg-info s with-editor magit-find-file flycheck magit ace-link google-translate init-loader helm helm-gtags markdown-mode git ggtags exec-path-from-shell auto-complete)))
  '(scroll-bar-mode nil)
  '(tool-bar-mode nil))
- '(menu-bar-mode nil)
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
@@ -39,3 +39,6 @@
  ;; If there is more than one, they won't work right.
  )
 
+;; スクリーンの最大化
+(set-frame-parameter nil 'fullscreen 'maximized)
+(toggle-frame-maximized)

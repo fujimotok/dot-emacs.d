@@ -35,6 +35,9 @@
 (telephone-line-defsegment* telephone-line-mule-info-segment ()
   '("" mode-line-mule-info "%*"))
 
+(telephone-line-defsegment* telephone-line-flycheck-segment ()
+  '("" flycheck-mode-line))
+
 ;; mule-info改行の表現方法の変更
 (setq eol-mnemonic-dos "↲")
 (setq eol-mnemonic-unix "↓")
@@ -51,7 +54,8 @@
 (setq telephone-line-rhs
       '((nil . nil)
 	(level2 . (telephone-line-vc-segment
-		  telephone-line-process-segment))
+		   telephone-line-process-segment
+		   telephone-line-flycheck-segment))
 	(level1 . (telephone-line-airline-position-segment))))
 
 ;; set separator shape

@@ -26,5 +26,5 @@
     (google-translate-translate
      (if asciip "en" "ja")
      (if asciip "ja" "en")
-     string)))
+     string 'current-buffer)))
 (global-set-key (kbd "C-x t") 'google-translate-enja-or-jaen)

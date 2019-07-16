@@ -12,9 +12,9 @@
 (require 'org)
 (define-key org-mode-map (kbd "C-c M-o") 'ace-link-org)
 
-(require 'eww)
-(define-key eww-link-kyemap (kbd "e") 'ace-link-eww)
-(define-key eww-mode-map (kbd "e") 'ace-link-eww)
+;(require 'eww)
+;(define-key eww-link-kyemap (kbd "e") 'ace-link-eww)
+;(define-key eww-mode-map (kbd "e") 'ace-link-eww)
 
 ;;; text-property-any -> next-single-property-change
 ;;; にしないと一部のリンクが辿れないので再定義
