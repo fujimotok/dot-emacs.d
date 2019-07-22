@@ -107,3 +107,12 @@
 
 
 (add-hook 'csharp-mode-hook 'my-csharp-mode-setup t)
+
+;; bug fix omnisharp process running dir
+(defun omnisharp--do-server-start-advice (orig-func &rest args)
+  "temporary change default-directory to path-to-project"
+  (let ((default-directory (file-name-directory (car args))))
+    (apply orig-func args)))
+
+;; override toggle-frame-maximized
+(advice-add 'omnisharp--do-server-start :around 'omnisharp--do-server-start-advice)
