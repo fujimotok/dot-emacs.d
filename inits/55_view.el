@@ -1,8 +1,20 @@
 ;; font 
 (set-frame-font "ricty diminished-10.5")
 
-(setq default-input-method "japanese-mozc")
-(global-set-key (kbd "<zenkaku-hankaku>") 'toggle-input-method)
+;; mozcの設定 Linux環境のみ
+(when (and (eq system-type 'gnu/linux)
+	   (file-exists-p "/proc/sys/fs/binfmt_misc/WSLInterop"))
+  (setq default-input-method "japanese-mozc")
+  (setq mozc-leim-title "あ")
+  (global-set-key (kbd "<zenkaku-hankaku>") 'toggle-input-method)
+  (require 'mozc-popup)
+  (setq mozc-candidate-style 'popup)
+  (set-face-background 'mozc-cand-overlay-description-face "steel blue")
+  (set-face-background 'mozc-cand-overlay-even-face "steel blue")
+  (set-face-background 'mozc-cand-overlay-odd-face "steel blue")
+  (set-face-background 'mozc-cand-overlay-footer-face "steel blue")
+  )
+
 ;; theme set
 (load-theme 'dracula t)
 
@@ -28,7 +40,7 @@
   (kill-new (buffer-file-name))
   (message "add kill ring: %s" (which-function)) )
 
-;;
+;; 行末折り返ししない
 (setq-default truncate-lines t)
 
 ;;
@@ -47,14 +59,6 @@
 (setq show-paren-style 'mixed)            ;; 括弧のハイライトの設定。
 (transient-mark-mode t)                   ;; 選択範囲をハイライト
 
-;; pop
-(setq helm-display-function #'display-buffer)
-(when (require 'popwin)
-  (setq display-buffer-function 'popwin:display-buffer)
-  (setq popwin:special-display-config
-	'(("*complitation*" :noselect t)
-	  ("helm" :regexp t :height 0.4))))
-
 ;; タイトルバーに時計
 (when (window-system)
   ;; display-timeより先にsetしておかないとdefaultの書式になる
@@ -72,3 +76,34 @@
   (setq battery-mode-line-format " %b%p%%")
   (setq frame-title-format '("" (:eval (if (buffer-file-name) " %f" " %b"))
 			     " --- " global-mode-string) ) )
+
+(add-to-list 'auto-mode-alist '("\\.xaml\\'" . nxml-mode))
+(require 'nxml-mode)
+(add-hook 'nxml-mode-hook
+          '(lambda ()
+             (hs-minor-mode 1)
+             (setq nxml-child-indent 4)))
+(add-to-list 'hs-special-modes-alist
+             '(nxml-mode
+               "<!--\\|<[^/>]>\\|<[^/][^>]*[^/]>"
+               ""
+               "<!--"
+               nxml-forward-element
+               nil)
+             nil
+             'eq)
+(define-key nxml-mode-map (kbd "C-c C-o") 'hs-toggle-hiding)
+(define-key nxml-mode-map (kbd "C-c C-l") 'hs-hide-level)
+(define-key nxml-mode-map (kbd "C-c C-a") 'hs-show-all)
+
+(setq backup-directory-alist '((".*" . "~/.emacs.d/auto-save")))
+(setq version-control t)
+(setq kept-new-versions 5)
+(setq kept-old-versions 1)
+(setq delete-old-versions t)
+
+(setq create-lockfiles nil)
+
+;; for 4k
+(setq split-height-threshold nil)
+(setq split-width-threshold 320)

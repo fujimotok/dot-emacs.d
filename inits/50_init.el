@@ -34,7 +34,8 @@
 (define-key global-map (kbd "C-S-f") 'forward-word)
 (define-key global-map (kbd "C-S-b") 'backward-word)
 
-
+;;(set-default-coding-systems 'utf-8-dos)
+(set-default-coding-systems 'utf-8-unix)
 ;;(define-key dired-mode-map "o" 'dired-open-file)
 
 (with-eval-after-load 'company
@@ -82,13 +83,11 @@
 	    (markdown-mode-cyclic t)
 	    ))
 
-(eval-after-load
- 'company
- '(add-to-list 'company-backends 'company-omnisharp))
+(with-eval-after-load 'company
+  (add-to-list 'company-backends 'company-omnisharp))
 
 (defun my-csharp-mode-setup ()
   (omnisharp-mode)
-  (company-mode)
   (flycheck-mode)
 
   (setq indent-tabs-mode nil)
@@ -98,15 +97,21 @@
   (setq truncate-lines t)
   (setq tab-width 4)
   (setq evil-shift-width 4)
-
+  ;(setq omnisharp-server-executable-path "C:\\Users\\fj\\.emacs.d\\.cache\\omnisharp\\server\\v1.34.1\\OmniSharp.exe")
+  (setq omnisharp-server-executable-path "/mnt/c/Users/fj/.emacs.d/.cache/omnisharp/server/v1.34.1-linux/omnisharp/OmniSharp.exe")
   ;csharp-mode README.md recommends this too
   ;(electric-pair-mode 1)       ;; Emacs 24
   ;(electric-pair-local-mode 1) ;; Emacs 25
-
+  (local-set-key (kbd "C-j") 'omnisharp-go-to-definition-ex)
   (local-set-key (kbd "C-c r r") 'omnisharp-run-code-action-refactoring))
 
-
 (add-hook 'csharp-mode-hook 'my-csharp-mode-setup t)
+
+(defun omnisharp-go-to-definition-ex ()
+  (interactive)
+  (if (bounds-of-thing-at-point 'word)
+      (omnisharp-go-to-definition)
+    (pop-tag-mark)))
 
 ;; bug fix omnisharp process running dir
 (defun omnisharp--do-server-start-advice (orig-func &rest args)
@@ -116,3 +121,14 @@
 
 ;; override toggle-frame-maximized
 (advice-add 'omnisharp--do-server-start :around 'omnisharp--do-server-start-advice)
+
+(require 'font-lock)
+(require 'font-lock+)
+(add-hook 'dired-mode-hook 'all-the-icons-dired-mode)
+
+;; win環境でsvnがsjisで吐くのでbufferも追従するように与える
+(add-to-list 'process-coding-system-alist '("[sS][vV][nN]" . sjis-dos))
+
+;; 外部からの変更を自動読み込み
+(global-auto-revert-mode)
+

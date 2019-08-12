@@ -20,3 +20,8 @@
   (when (file-exists-p candidate)
     ad-do-it))
 
+(setq helm-display-function #'display-buffer) ;; helmのbuffer表示関数を通常のものに上書き
+(when (require 'popwin)
+  (setq display-buffer-function 'popwin:display-buffer) ;;通常のbuffer表示関数をpopwin化
+  (setq popwin:special-display-config
+	'(("helm" :regexp t :height 0.4))))
