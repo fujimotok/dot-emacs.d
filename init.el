@@ -204,15 +204,16 @@
 (leaf *dired
   :config
   (leaf *windows
-    :if (eq system-type 'windows-nt)
+    :if (or (eq system-type 'windows-nt)
+            (and (eq system-type 'gnu/linux) (file-exists-p "/proc/sys/fs/binfmt_misc/WSLInterop")))
     :config
     (defun dired-open-file ()
       "In dired, open the file named on this line."
       (interactive)
-      (let* ((file (dired-get-filename))
-             (open "start"))
+      (let* ((file (if (eq system-type 'windows-nt) (dired-get-filename) (shell-command-to-string (concat "wslpath -w" " " (dired-get-filename)))))
+             (open (if (eq system-type 'windows-nt) "start" "explorer.exe")))
         (message "Opening %s..." file)
-        (shell-command (concat open " " file))
+        (shell-command (mapconcat #'shell-quote-argument (list open file) " "))
         ;;(call-process "gnome-open" nil 0 nil file)
         (message "Opening %s done" file)))
     (add-hook 'dired-mode-hook
@@ -249,6 +250,27 @@
     (add-hook 'dired-mode-hook
               '(lambda ()
                  (define-key dired-mode-map "\C-o" 'my-dired-open))))
+
+  (leaf *common
+    :config
+    ;; dired-find-alternate-file の有効化
+    (put 'dired-find-alternate-file 'disabled nil)
+
+    ;; ファイルなら別バッファで、ディレクトリなら同じバッファで開く
+    (defun dired-open-in-accordance-with-situation ()
+      (interactive)
+      (let ((file (dired-get-filename)))
+        (if (file-directory-p file)
+            (dired-find-alternate-file)
+          (dired-find-file))))
+
+    (add-hook 'dired-mode-hook
+              '(lambda ()
+                 ;; RET 標準の dired-find-file では dired バッファが複数作られるので
+                 ;; dired-find-alternate-file を代わりに使う
+                 (define-key dired-mode-map (kbd "RET") 'dired-open-in-accordance-with-situation)
+                 (define-key dired-mode-map (kbd "a") 'dired-find-file)))
+    )
   )
 
 (leaf *csharp
