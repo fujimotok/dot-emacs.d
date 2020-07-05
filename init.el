@@ -43,17 +43,23 @@
     (if (bolp)
         (back-to-indentation)
       (beginning-of-line)))
+  (defun backward-delete-word (arg)
+    (interactive "p")
+    (delete-region (point) (progn (backward-word arg) (point))))
   :bind (([C-wheel-up] . text-scale-increase)
          ([C-wheel-down] . text-scale-decrease)
          ((kbd "C-a") . move-beginning-alt)
          ((kbd "C-S-f") . forward-word)
          ((kbd "C-S-b") . backward-word)
+         ((kbd "C-<backspace>") . backward-delete-word)
          )
   :custom
   `((menu-bar-mode . nil)
     (scroll-bar-mode . nil)
     (tool-bar-mode . nil)
     (inhibit-compacting-font-caches . t)
+    (inhibit-startup-screen . t)
+    (initial-scratch-message . "")
     )
   :config
   ;; スクリーンの最大化
@@ -68,6 +74,15 @@
   (show-paren-mode t)                       ;; 対応する括弧をハイライト
   (setq show-paren-style 'mixed)            ;; 括弧のハイライトの設定。
   (transient-mark-mode t)                   ;; 選択範囲をハイライト
+  (setq backup-directory-alist '((".*" . "~/.emacs.d/auto-save")))
+  (setq version-control t)
+  (setq kept-new-versions 5)
+  (setq kept-old-versions 1)
+  (setq delete-old-versions t)
+  (setq create-lockfiles nil)
+  ;; for 4k
+  (setq split-height-threshold nil)
+  (setq split-width-threshold 320)
   )
 
 ;; init loader
@@ -194,14 +209,15 @@
     (defun dired-open-file ()
       "In dired, open the file named on this line."
       (interactive)
-      (let* ((file (dired-get-filename)))
+      (let* ((file (dired-get-filename))
+             (open "start"))
         (message "Opening %s..." file)
-        (call-process "open" nil 0 nil file)
+        (shell-command (concat open " " file))
         ;;(call-process "gnome-open" nil 0 nil file)
         (message "Opening %s done" file)))
     (add-hook 'dired-mode-hook
               '(lambda ()
-                 (define-key dired-mode-map "\C-m" 'dired-open-file)
+                 (define-key dired-mode-map "\C-o" 'dired-open-file)
                  (all-the-icons-dired-mode))))
 
   (leaf *darwin
@@ -232,7 +248,7 @@
                (call-interactively 'dired-find-file-other-window)))))
     (add-hook 'dired-mode-hook
               '(lambda ()
-                 (define-key dired-mode-map "\C-m" 'my-dired-open))))
+                 (define-key dired-mode-map "\C-o" 'my-dired-open))))
   )
 
 (leaf *csharp
@@ -451,6 +467,7 @@ The following %-sequences are provided:
   )
 
 (leaf *window-t
+  :doc "window切替関数の定義とkey-mapの設定"
   :config
   (defun other-window-or-split ()
     (interactive)
@@ -459,8 +476,19 @@ The following %-sequences are provided:
       (pop-to-buffer nil))
     (other-window 1))
 
-  (global-set-key (kbd "C-t") 'other-window-or-split)
-  )
+  ;; global-set-keyではほかのモードで上書きされてしまう ex)dired-mode
+  (defvar window-t-minor-mode-map
+    (let ((map (make-sparse-keymap)))
+      (define-key map (kbd "C-t") 'other-window-or-split)
+      map)
+    "window-t-minor-mode keymap.")
+
+  (define-minor-mode window-t-minor-mode
+    "A minor mode that window-t key settings override annoying major modes."
+    :init-value t
+    :lighter "window-t")
+
+  (window-t-minor-mode 1))
 
 ;; タイトルバーに時計
 (when (window-system)
@@ -481,8 +509,7 @@ The following %-sequences are provided:
 			     " --- " global-mode-string) ) )
 
 
-(leaf leaf-convert
-  :ensure t
+(leaf *xml
   :bind ((nxml-mode-map
           ("C-c C-o" . hs-toggle-hiding))
          (nxml-mode-map
@@ -490,7 +517,6 @@ The following %-sequences are provided:
          (nxml-mode-map
           ("C-c C-a" . hs-show-all)))
   :mode (("\\.xaml\\'" . nxml-mode))
-  :require nxml-mode
   :config
   (add-hook 'nxml-mode-hook
             '(lambda nil
@@ -500,85 +526,82 @@ The following %-sequences are provided:
                '(nxml-mode "<!--\\|<[^/>]>\\|<[^/][^>]*[^/]>" "" "<!--" nxml-forward-element nil)
                nil 'eq))
 
-(setq backup-directory-alist '((".*" . "~/.emacs.d/auto-save")))
-(setq version-control t)
-(setq kept-new-versions 5)
-(setq kept-old-versions 1)
-(setq delete-old-versions t)
 
-(setq create-lockfiles nil)
+(leaf *ivy
+  :config
+  (leaf ivy
+    :ensure t
+    :bind ((ivy-minibuffer-map
+            ("<escape>" . minibuffer-keyboard-quit)))
+    :require ivy-hydra
+    :setq ((ivy-use-virtual-buffers . t)
+           (ivy-tab-space . t)
+           (ivy-height-alist . '((t lambda (_caller) (/ (frame-height) 3)))))
+           
+    :config
+    (when (setq enable-recursive-minibuffers t)
+      (minibuffer-depth-indicate-mode 1))
+    (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line)
+    (ivy-mode 1))
 
-;; for 4k
-(setq split-height-threshold nil)
-(setq split-width-threshold 320)
+  (leaf counsel
+    :ensure t
+    :bind (("M-x" . counsel-M-x)
+           ("C-M-z" . counsel-fzf)
+           ("C-M-r" . counsel-recentf)
+           ("C-x C-b" . counsel-ibuffer)
+           ("C-c i" . counsel-imenu)
+           ("C-x b" . ivy-switch-buffer)
+           ("C-M-f" . counsel-rg)
+           ("M-y" . counsel-yank-pop)
+           ("C-x C-f" . counsel-find-file)
+           (counsel-find-file-map
+            ("C-l" . counsel-up-directory))
+           (counsel-find-file-map
+            ("<tab>" . ivy-alt-done)))
+    :setq ((ivy-on-del-error-function function ignore)
+           (ivy-initial-inputs-alist . nil))
+    :config
+    (setq counsel-find-file-ignore-regexp (regexp-opt
+                                           '("./" "../")))
+    (counsel-mode 1))
 
+  (leaf swiper
+    :ensure t
+    :bind (("M-s M-s" . swiper-thing-at-point)))
+  ;; (custom-set-faces
+  ;;  '(ivy-current-match
+  ;;    ((((class color) (background light))
+  ;;      :background "#FFF3F3" :distant-foreground "#000000")
+  ;;     (((class color) (background dark))
+  ;;      :background "#404040" :distant-foreground "#abb2bf")))
+  ;;  '(ivy-minibuffer-match-face-1
+  ;;    ((((class color) (background light)) :foreground "#666666")
+  ;;     (((class color) (background dark)) :foreground "#999999")))
+  ;;  '(ivy-minibuffer-match-face-2
+  ;;    ((((class color) (background light)) :foreground "#c03333" :underline t)
+  ;;     (((class color) (background dark)) :foreground "#e04444" :underline t)))
+  ;;  '(ivy-minibuffer-match-face-3
+  ;;    ((((class color) (background light)) :foreground "#8585ff" :underline t)
+  ;;     (((class color) (background dark)) :foreground "#7777ff" :underline t)))
+  ;;  '(ivy-minibuffer-match-face-4
+  ;;    ((((class color) (background light)) :foreground "#439943" :underline t)
+  ;;     (((class color) (background dark)) :foreground "#33bb33" :underline t))))
 
-(when (require 'ivy nil t)
-  (setq ivy-height 40) ;; minibufferのサイズを拡大！（重要）
-  (require 'ivy-hydra)  ;; M-o を ivy-dispatching-done-hydra に割り当てる．
-  (setq ivy-use-virtual-buffers t) ;; `ivy-switch-buffer' (C-x b) のリストに recent files と bookmark を含める．
-  ;; ミニバッファでコマンド発行を認める
-  (when (setq enable-recursive-minibuffers t)
-    (minibuffer-depth-indicate-mode 1)) ;; 何回層入ったかプロンプトに表示．
-  ;; ESC連打でミニバッファを閉じる
-  (define-key ivy-minibuffer-map (kbd "<escape>") 'minibuffer-keyboard-quit)
-  ;; アクティベート
-  (ivy-mode 1))
+  (leaf ivy-rich
+    :ensure t
+    :config
+    (ivy-rich-mode 1))
 
-(when (require 'counsel nil t)
+  (leaf all-the-icons-ivy
+    :ensure t
+    :config
+    (all-the-icons-ivy-setup)
+    (dolist (command
+             '(counsel-projectile-switch-project counsel-ibuffer))
+      (add-to-list 'all-the-icons-ivy-buffer-commands command)))
 
-  ;; キーバインドは一例です．好みに変えましょう．
-  (global-set-key (kbd "M-x")   'counsel-M-x)
-  (global-set-key (kbd "C-M-z") 'counsel-fzf)
-  (global-set-key (kbd "C-M-r") 'counsel-recentf)
-  (global-set-key (kbd "C-x C-b") 'counsel-ibuffer)
-  (global-set-key (kbd "C-x b") 'ivy-switch-buffer)
-  (global-set-key (kbd "C-M-f") 'counsel-rg)
-  (global-set-key (kbd "M-y") 'counsel-yank-pop)
-  (global-set-key (kbd "C-x C-f") 'counsel-find-file)
-  (setq counsel-find-file-ignore-regexp (regexp-opt '("./" "../"))) ;; find-fileでaction発行を除外
-  (define-key counsel-find-file-map (kbd "C-l") 'counsel-up-directory) ;; find-file C-lで上のdir
-  (define-key counsel-find-file-map (kbd "<tab>") 'ivy-alt-done) ;; find-file tab一発で補完
-  (setq ivy-on-del-error-function #'ignore) ;; ivy中にBSでivyから抜けないようにする
-  ;; アクティベート
-  (counsel-mode 1))
-
-(when (require 'swiper nil t)
-  ;; キーバインドは一例です．好みに変えましょう．
-  (global-set-key (kbd "M-s M-s") 'swiper-thing-at-point))
-
-(custom-set-faces
- '(ivy-current-match
-   ((((class color) (background light))
-     :background "#FFF3F3" :distant-foreground "#000000")
-    (((class color) (background dark))
-     :background "#404040" :distant-foreground "#abb2bf")))
- '(ivy-minibuffer-match-face-1
-   ((((class color) (background light)) :foreground "#666666")
-    (((class color) (background dark)) :foreground "#999999")))
- '(ivy-minibuffer-match-face-2
-   ((((class color) (background light)) :foreground "#c03333" :underline t)
-    (((class color) (background dark)) :foreground "#e04444" :underline t)))
- '(ivy-minibuffer-match-face-3
-   ((((class color) (background light)) :foreground "#8585ff" :underline t)
-    (((class color) (background dark)) :foreground "#7777ff" :underline t)))
- '(ivy-minibuffer-match-face-4
-   ((((class color) (background light)) :foreground "#439943" :underline t)
-    (((class color) (background dark)) :foreground "#33bb33" :underline t))))
-
-;; ?
-(setq ivy-tab-space t)
-
-(when (require 'all-the-icons-ivy nil t)
-  (dolist (command '(counsel-projectile-switch-project
-                     counsel-ibuffer))
-    (add-to-list 'all-the-icons-ivy-buffer-commands command))
-  (all-the-icons-ivy-setup))
-
-(when (require 'ivy-rich nil t)
-  (ivy-rich-mode 1))
-
-(setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line)
+  )
 
 (leaf google-translate
   :ensure t
@@ -663,6 +686,7 @@ The following %-sequences are provided:
                         (point)
                         'help-echo)))
           (nreverse candidates))))))
+
 (leaf *xwidget-webkit
   :disabled t
   :hook ((xwidget-webkit-mode-hook . xwidget-webkit-mode-hook-func))
@@ -810,4 +834,4 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   (add-to-list 'ac-modes 'fundamental-mode)
   (add-to-list 'ac-modes 'org-mode)
   (add-to-list 'ac-modes 'yatex-mode)
-  (ac-set-trigger-key "TAB"))
+  (ac-set-trigger-key "TAB")))
