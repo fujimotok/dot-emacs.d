@@ -1,7 +1,7 @@
-;; proxy
-(setq url-proxy-services
-      '(("http" . "")
-        ("https" . "")))
+;; when use proxy, uncomment this.
+;;(setq url-proxy-services
+;;      '(("http" . "")
+;;        ("https" . "")))
 
 ;; leafのロード
 (prog1 "prepare leaf"
@@ -337,6 +337,50 @@
 
 (leaf nxml-mode
   :mode "\\.xaml\\'"
+  )
+
+(leaf *cpp
+  :config
+  ;; todo: coding style 4 tab etc...
+  (leaf counsel-gtags
+    :ensure t
+    :config
+    (add-hook 'c-mode-hook 'counsel-gtags-mode)
+    ;; key bindings
+    (add-hook 'counsel-gtags-mode-hook
+              '(lambda ()
+                 (local-set-key (kbd "C-j") 'counsel-gtags-dwim-ex)
+                 (local-set-key (kbd "C-c t") 'counsel-gtags-find-definition)
+                 (local-set-key (kbd "C-c r") 'counsel-gtags-find-reference)
+                 (local-set-key (kbd "C-c s") 'counsel-gtags-find-symbol)
+                 (local-set-key (kbd "C-c h") 'counsel-gtags-find-header-or-source)
+                 (local-set-key (kbd "C-c b") 'counsel-gtags-go-backward)))
+
+    (defun counsel-gtags-dwim-ex ()
+      (interactive)
+      (if (bounds-of-thing-at-point 'word)
+          (counsel-gtags-dwim)
+        (counsel-gtags-go-backward)))
+
+    (defun counsel-gtags-find-header-or-source ()
+      (interactive)
+      (let ( (prefix (nth 0 (split-string (buffer-name) "\\.")))
+             (suffix (nth 1 (split-string (buffer-name) "\\.")))
+             (buffer (buffer-name))
+             (target "") )
+        (progn
+          (cond ((string= suffix "c")   (setq target ".h"))
+                ((string= suffix "cpp") (setq target ".h"))
+                ((string= suffix "cxx") (setq target ".h"))
+                ((string= suffix "h")   (setq target ".c"))
+                ((string= suffix "hpp") (setq target ".cpp"))
+                ((string= suffix "hxx") (setq target ".cxx")) )
+          ;;別windowに出ない場合は以下を有効に
+          ;;(other-window 1)
+          ;;(switch-to-buffer buffer)
+          (counsel-gtags-find-file (concat prefix target))
+          )))
+    )
   )
 
 (leaf *markdown
@@ -789,44 +833,6 @@ The following %-sequences are provided:
 ;;     ))
 ;; (add-hook 'switch-buffer-functions #'switch-buffer-functions-func)
   )
-
-
-(add-hook 'c-mode-hook 'helm-gtags-mode)
-
-;; key bindings
-(add-hook 'helm-gtags-mode-hook
-          '(lambda ()
-              (local-set-key (kbd "C-j") 'helm-gtags-dwim-ex)
-              (local-set-key (kbd "C-c t") 'helm-gtags-find-tag)
-              (local-set-key (kbd "C-c r") 'helm-gtags-find-rtag)
-              (local-set-key (kbd "C-c s") 'helm-gtags-find-symbol)
-	      (local-set-key (kbd "C-c h") 'helm-gtags-find-header-or-source)
-              (local-set-key (kbd "C-c b") 'helm-gtags-pop-stack)))
-
-(defun helm-gtags-dwim-ex ()
-  (interactive)
-  (if (bounds-of-thing-at-point 'word)
-      (helm-gtags-dwim)
-      (helm-gtags-pop-stack)))
-
-(defun helm-gtags-find-header-or-source ()
-  (interactive)
-  (let ( (prefix (nth 0 (split-string (buffer-name) "\\.")))
-	 (suffix (nth 1 (split-string (buffer-name) "\\.")))
-	 (buffer (buffer-name))
- 	 (target "") )
-    (progn
-      (cond ((string= suffix "c")   (setq target ".h"))
-	    ((string= suffix "cpp") (setq target ".h"))
-	    ((string= suffix "cxx") (setq target ".h"))
-	    ((string= suffix "h")   (setq target ".c"))
-	    ((string= suffix "hpp") (setq target ".cpp"))
-	    ((string= suffix "hxx") (setq target ".cxx")) )
-      ;;別windowに出ない場合は以下を有効に
-      ;;(other-window 1)
-      ;;(switch-to-buffer buffer)
-      (helm-gtags-find-files (concat prefix target))
-    ) ) )
 
 (add-hook 'xwidget-webkit-mode-hook 'xwidget-webkit-mode-hook-func)
 (defun xwidget-webkit-mode-hook-func ()
