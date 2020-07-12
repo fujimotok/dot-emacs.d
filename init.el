@@ -159,7 +159,7 @@
 
 (leaf company
   :after t
-  :bind (("TAB" . company-indent-or-complete-common)
+  :bind (("<tab>" . company-indent-or-complete-common)
          (company-active-map
           ("C-n" . company-select-next))
          (company-active-map
@@ -274,39 +274,48 @@
   )
 
 (leaf *csharp
-  :hook ((csharp-mode-hook . my-csharp-mode-setup))
   :config
-  (defun my-csharp-mode-setup nil
-    (omnisharp-mode)
-    (flycheck-mode)
-    (setq indent-tabs-mode nil)
-    (setq c-syntactic-indentation t)
-    (c-set-style "ellemtel")
-    (setq c-basic-offset 4)
-    (setq truncate-lines t)
-    (setq tab-width 4)
-    (setq evil-shift-width 4)
-    (setq omnisharp-server-executable-path "/mnt/c/Users/fj/.emacs.d/.cache/omnisharp/server/v1.34.1-linux/omnisharp/OmniSharp.exe")
-    (local-set-key
-     (kbd "C-j")
-     'omnisharp-go-to-definition-ex)
-    (local-set-key
-     (kbd "C-c r r")
-     'omnisharp-run-code-action-refactoring))
+  (leaf omnisharp
+    :ensure t
+    )
 
-  (defun omnisharp-go-to-definition-ex nil
-    (interactive)
-    (if (bounds-of-thing-at-point 'word)
-        (omnisharp-go-to-definition)
-      (pop-tag-mark)))
+  (leaf csharp-mode
+    :ensure t
+    :hook ((csharp-mode-hook . my-csharp-mode-setup))
+    :config
+    (defun my-csharp-mode-setup nil
+      (omnisharp-mode)
+      (flycheck-mode)
+      (setq indent-tabs-mode nil)
+      (setq c-syntactic-indentation t)
+      (c-set-style "ellemtel")
+      (setq c-basic-offset 4)
+      (setq truncate-lines t)
+      (setq tab-width 4)
+      (setq evil-shift-width 4)
+      ;;(setq omnisharp-server-executable-path "/mnt/c/Users/fj/.emacs.d/.cache/omnisharp/server/v1.34.1-linux/omnisharp/OmniSharp.exe")
+      (local-set-key
+       (kbd "C-j")
+       'omnisharp-go-to-definition-ex)
+      (local-set-key
+       (kbd "C-c r r")
+       'omnisharp-run-code-action-refactoring))
 
-  (defun omnisharp--do-server-start-advice (orig-func &rest args)
-    "temporary change default-directory to path-to-project"
-    (let ((default-directory (file-name-directory
-                              (car args))))
-      (apply orig-func args)))
+    (defun omnisharp-go-to-definition-ex nil
+      (interactive)
+      (if (bounds-of-thing-at-point 'word)
+          (omnisharp-go-to-definition)
+        (pop-tag-mark)))
 
-  (advice-add 'omnisharp--do-server-start :around 'omnisharp--do-server-start-advice))
+    (defun omnisharp--do-server-start-advice (orig-func &rest args)
+      "temporary change default-directory to path-to-project"
+      (let ((default-directory (file-name-directory
+                                (car args))))
+        (apply orig-func args)))
+
+    ;;(advice-add 'omnisharp--do-server-start :around 'omnisharp--do-server-start-advice)
+    )
+  )
 
 (leaf *markdown
   :config
