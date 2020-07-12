@@ -1,3 +1,8 @@
+;; proxy
+(setq url-proxy-services
+      '(("http" . "")
+        ("https" . "")))
+
 ;; leafのロード
 (prog1 "prepare leaf"
   (prog1 "package"
@@ -84,10 +89,6 @@
   (setq split-height-threshold nil)
   (setq split-width-threshold 320)
   )
-
-;; init loader
-;;(require 'init-loader)
-;;(init-loader-load "~/.emacs.d/inits/")
 
 (leaf doom-themes
   :ensure t
@@ -186,7 +187,24 @@
   (global-company-mode)
   (with-eval-after-load 'company
   (add-to-list 'company-backends 'company-omnisharp))
-)
+  )
+
+(leaf migemo
+  :ensure t
+  :custom
+  ((migemo-command . "cmigemo")
+   (migemo-options . '("-q" "--emacs" "-i" "\a"))
+   (migemo-user-dictionary . nil)
+   (migemo-regex-dictionary . nil)
+   (migemo-use-pattern-alist . t)
+   (migemo-use-frequent-pattern-alist . t)
+   (migemo-pattern-alist-length . 1000)
+   (migemo-coding-system . 'utf-8-unix))
+  :config
+  (setq migemo-dictionary (expand-file-name "~/.emacs.d/lib/dict/utf-8/migemo-dict"))
+  (load-library "migemo")
+  (migemo-init)
+  )
 
 (leaf ripgrep
   :ensure t 
@@ -315,6 +333,10 @@
 
     ;;(advice-add 'omnisharp--do-server-start :around 'omnisharp--do-server-start-advice)
     )
+  )
+
+(leaf nxml-mode
+  :mode "\\.xaml\\'"
   )
 
 (leaf *markdown
