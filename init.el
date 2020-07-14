@@ -9,7 +9,7 @@
     (custom-set-variables
      '(package-archives '(("org"   . "https://orgmode.org/elpa/")
                           ("melpa" . "https://melpa.org/packages/")
-                          ("melpa" . "https://stable.melpa.org/packages/")
+                          ("melpa-stable" . "https://stable.melpa.org/packages/")
                           ("marmalade" . "http://marmalade-repo.org/packages/")
                           ("gnu"   . "https://elpa.gnu.org/packages/"))))
     (package-initialize))
