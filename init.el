@@ -86,8 +86,14 @@
   (setq delete-old-versions t)
   (setq create-lockfiles nil)
   ;; for 4k
-  (setq split-height-threshold nil)
-  (setq split-width-threshold 320)
+  (defun set-split-threshold-when-frame-size-changed (frame)
+    (when (or (/= (window-pixel-width-before-size-change (frame-root-window frame))
+                  (window-pixel-width (frame-root-window frame)))
+              (/= (window-pixel-height-before-size-change (frame-root-window frame))
+                  (window-pixel-height (frame-root-window frame))))
+      (setq split-height-threshold nil)
+      (setq split-width-threshold (frame-width))))
+  (add-hook 'window-size-change-functions 'set-split-threshold-when-frame-size-changed)
   )
 
 (leaf doom-themes
@@ -104,6 +110,14 @@
     ((nyan-bar-length . 10))
     :config
     (nyan-mode t))
+  (leaf parrot
+    :ensure t
+    :custom
+    :config
+    (parrot-mode t)
+    (add-hook 'lsp-after-initialize-hook #'parrot-start-animation)
+    (add-hook 'lsp-after-open-hook #'parrot-start-animation)
+    )
   (leaf all-the-icons
     :ensure t
     :custom
@@ -144,9 +158,23 @@
           (doom-modeline-spc)
           (doom-modeline--buffer-name))
          'face (if (doom-modeline--active) 'doom-modeline-buffer-file 'mode-line-inactive)))
+      (doom-modeline-def-segment my/parrot
+        "The party parrot animated icon. Requires `parrot-mode' to be enabled."
+        (when (and (doom-modeline--active)
+                   (bound-and-true-p parrot-mode))
+          (concat (parrot-create) (doom-modeline-spc) (doom-modeline-spc))))
+      (doom-modeline-def-segment my/lsp
+        (when (and (doom-modeline--active)
+                   (bound-and-true-p lsp-mode))
+          (if-let (workspaces (lsp-workspaces))
+              (concat (doom-modeline-lsp-icon "lsp:" 'success)
+                      (string-join (--map (car (split-string (format "%s" (lsp--workspace-print it)) ":"))
+                                                 workspaces)))
+            (concat (doom-modeline-lsp-icon "lsp:" 'warning) (propertize "!" 'face 'warning)))))
+
       (doom-modeline-def-modeline 'main
         '(bar my/major-mode my/major-mode-name buffer-mule-info my/buffer-info)
-        '(input-method checker process vcs buffer-position )))
+        '(input-method my/lsp checker process vcs buffer-position my/parrot)))
     (doom-modeline-mode t))
   )
 
@@ -159,7 +187,6 @@
   (with-eval-after-load 'ssh (shell-dirtrack-mode t)))
 
 (leaf company
-  :after t
   :bind (("<tab>" . company-indent-or-complete-common)
          (company-active-map
           ("C-n" . company-select-next))
@@ -186,7 +213,10 @@
   ;; (set-face-attribute 'company-scrollbar-bg nil :background "#002b37")
   (global-company-mode)
   (with-eval-after-load 'company
-  (add-to-list 'company-backends 'company-omnisharp))
+    ;;(add-to-list 'company-backends 'company-omnisharp)
+    ;;(add-to-list 'company-backends 'company-lsp)
+    (add-to-list 'company-backends 'company-elisp)
+    )
   )
 
 (leaf migemo
@@ -207,7 +237,7 @@
   )
 
 (leaf ripgrep
-  :ensure t 
+  :ensure t
   :custom
   ((ripgrep-executable . "rg")
    (ripgrep-arguments . '("-S"))))
@@ -297,9 +327,10 @@
     :ensure t
     )
 
+  ;; omniSharp lsp に移行中。問題なければ上記omnisharpは不要
   (leaf csharp-mode
     :ensure t
-    :hook ((csharp-mode-hook . my-csharp-mode-setup))
+    :hook ((csharp-mode-hook . lsp)) ;;((csharp-mode-hook . my-csharp-mode-setup))
     :config
     (defun my-csharp-mode-setup nil
       (omnisharp-mode)
@@ -311,7 +342,7 @@
       (setq truncate-lines t)
       (setq tab-width 4)
       (setq evil-shift-width 4)
-      ;;(setq omnisharp-server-executable-path "/mnt/c/Users/fj/.emacs.d/.cache/omnisharp/server/v1.34.1-linux/omnisharp/OmniSharp.exe")
+      (setq omnisharp-server-executable-path ".cache/omnisharp/server/v1.34.1-linux/omnisharp/OmniSharp.exe")
       (local-set-key
        (kbd "C-j")
        'omnisharp-go-to-definition-ex)
@@ -331,7 +362,7 @@
                                 (car args))))
         (apply orig-func args)))
 
-    ;;(advice-add 'omnisharp--do-server-start :around 'omnisharp--do-server-start-advice)
+    (advice-add 'omnisharp--do-server-start :around 'omnisharp--do-server-start-advice)
     )
   )
 
@@ -381,6 +412,147 @@
           (counsel-gtags-find-file (concat prefix target))
           )))
     )
+  )
+
+
+(leaf lsp-mode
+  :ensure t
+  :custom
+  ;; debug
+  ((lsp-print-io . t)
+  (lsp-trace . t)
+  (lsp-print-performance . t)
+  (lsp-enable-snippet . nil)
+  ;; general
+  (lsp-auto-guess-root . t)
+  ;;(lsp-document-sync-method . 'incremental) ;; always send incremental document
+  (lsp-document-sync-method . 2)
+  (lsp-prefer-capf . t)
+  (lsp-response-timeout . 5)
+  ;;(lsp-prefer-flymake . 'flymake)
+  (lsp-enable-completion-at-point . nil))
+  :bind
+  ((lsp-mode-map
+    ("C-c C-r"   . lsp-rename)))
+  :config
+  ;; if you are adding the support for your language server in separate repo use
+  (add-to-list 'lsp-language-id-configuration '(python-mode . "python"))
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-stdio-connection "pyls")
+                    :major-modes '(python-mode)
+                    :server-id 'pyls))
+
+  (add-to-list 'lsp-language-id-configuration '(csharp-mode . "csharp"))
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-stdio-connection '(".cache/lsp/omnisharp-roslyn/v1.35.3/OmniSharp.exe" "-lsp"))
+                    :major-modes '(csharp-mode)
+                    :server-id 'omnisharp))
+  (add-to-list 'lsp-language-id-configuration '(web-mode . "web"))
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-stdio-connection '("vls"))
+                    :major-modes '(web-mode)
+                    :server-id 'vls))
+
+  ;; パンくずリスト。hookでdisableされるのを防ぐ
+  (lsp-headerline-breadcrumb-mode 1)
+  (remove-hook 'lsp-unconfigure-hook #'lsp-headerline--disable-breadcrumb t)
+
+  ;; LSP UI tools
+  (leaf lsp-ui
+    :ensure t
+    :custom
+    ;; lsp-ui-doc
+    ((lsp-ui-doc-enable . nil)
+    (lsp-ui-doc-header . t)
+    (lsp-ui-doc-include-signature . t)
+    (lsp-ui-doc-position . 'at-point) ;; top, bottom, or at-point
+    (lsp-ui-doc-max-width . 100)
+    (lsp-ui-doc-max-height . 30)
+    (lsp-ui-doc-use-childframe . t)
+    (lsp-ui-doc-use-webkit . t)
+    ;; lsp-ui-flycheck
+    (lsp-ui-flycheck-enable . nil)
+    ;; lsp-ui-sideline
+    (lsp-ui-sideline-enable . nil)
+    (lsp-ui-sideline-ignore-duplicate . t)
+    (lsp-ui-sideline-show-symbol . nil)
+    (lsp-ui-sideline-show-hover . nil)
+    (lsp-ui-sideline-show-diagnostics . nil)
+    (lsp-ui-sideline-show-code-actions . nil)
+    ;; lsp-ui-imenu
+    (lsp-ui-imenu-enable . nil)
+    (lsp-ui-imenu-kind-position . 'top)
+    ;; lsp-ui-peek
+    (lsp-ui-peek-enable . t)
+    (lsp-ui-peek-peek-height . 20)
+    (lsp-ui-peek-list-width . 50)
+    (lsp-ui-peek-fontify . 'on-demand)) ;; never, on-demand, or always
+    :preface
+    (defun lsp-ui-peek-find-definitions-or-pop ()
+      (interactive)
+      (if (bounds-of-thing-at-point 'word)
+          (lsp-ui-peek-find-definitions)
+        (xref-pop-marker-stack)))
+
+    (defun lsp-ui-peek-find-references-or-pop ()
+      (interactive)
+      (if (bounds-of-thing-at-point 'word)
+          (lsp-ui-peek-find-references)
+        (xref-pop-marker-stack)))
+    :bind
+    ((lsp-mode-map
+      ("C-j"   . lsp-ui-peek-find-definitions-or-pop))
+     (lsp-mode-map
+      ("C-S-j"   . lsp-ui-peek-find-references-or-pop))
+     (lsp-mode-map
+      ("C-h d"   . lsp-ui-doc-show))
+     (lsp-mode-map
+      ("C-h a"   . lsp-execute-code-action))
+     )
+    :hook
+    (lsp-mode . lsp-ui-mode)
+    )
+  )
+
+(leaf flycheck
+  :custom
+  ((flycheck-check-syntax-automatically . '(mode-enabled save idle-change))
+   (flycheck-idle-change-delay . 2))
+  :config
+  (add-hook 'flycheck-mode-hook
+            (lambda () (flycheck-add-mode 'javascript-eslint 'web-mode)))
+  )
+
+(leaf python-mode
+  :config
+  (add-hook 'python-mode-hook #'lsp)
+  )
+
+(leaf web-mode
+  :mode (("\\.vue\\'" . web-mode))
+  :custom
+  ((web-mode-markup-indent-offset . 2)
+   (web-mode-code-indent-offset . 0)
+   (web-mode-part-padding . 2)
+   (web-mode-auto-close-style . 2)
+   )
+  :config
+  (add-hook 'web-mode-hook #'lsp)
+  )
+
+(leaf arduino-mode
+  :disabled t
+  :custom
+  ((arduino-executable . "arduino_debug")
+   (flycheck-arduino-executable . "arduino_debug"))
+  :config
+
+  (defun my-arduino-mode-hook nil
+    (flycheck-arduino-setup)
+    (defvar-local flycheck-check-syntax-automatically '(save))
+    (flycheck-mode)
+    )
+  (add-hook 'arduino-mode-hook 'my-arduino-mode-hook)
   )
 
 (leaf *markdown
@@ -525,18 +697,15 @@ The following %-sequences are provided:
 (setq battery-status-function #'battery-linux-sysfs-wsl))
 
 (leaf *which-func
-  ;; 関数名表示
+  ;; 関数名表示 lsp-modeでは使わない
   :config
   (which-function-mode)
 
-  (setq mode-line-format (delete (assoc 'which-func-mode
-                                        mode-line-format) mode-line-format)
-        which-func-header-line-format '(which-func-mode ("" which-func-format)))
+  (setq which-func-header-line-format '(which-func-mode ("" which-func-format)))
+
   (defadvice which-func-ff-hook (after header-line activate)
-    (when which-func-mode
-      (setq mode-line-format (delete (assoc 'which-func-mode
-                                            mode-line-format) mode-line-format)
-            header-line-format which-func-header-line-format)))
+    (when (and which-func-mode (not (bound-and-true-p lsp-mode)))
+      (setq header-line-format which-func-header-line-format)))
 
   (defun show-file-name ()
     (interactive)
@@ -594,16 +763,16 @@ The following %-sequences are provided:
 	'((format "%s/%s/%s" year month day)
 	  (format "(%s:%s)" 24-hours minutes)))
   (display-time) ;; display-time-stringの有効化
-  ;; タイトルバーの書式設定 global-mode-stringにdisplay-time-stringが入っている
+  (display-battery-mode 1)
+  (setq battery-mode-line-format " %b%p%%")
+  (with-eval-after-load 'doom-modeline
+    ;; doom-modelineがbattery-mode-line-stringを更新させなくするのでremove
+    (advice-remove 'battery-update 'doom-modeline-update-battery-status))
+
   ;; バッファがファイルのときはフルパス、でなければバッファ名表示
   ;; if(buffer-file-name) の評価がsetq時で終わらないよう:eval
-  ;;(setq battery-update-interval 1)
-  ;;(setq display-time-interval 1)
-  (display-battery-mode 1)
-  ;; Either BATn or yeeloong-bat, basically.
-  (setq battery-mode-line-format " %b%p%%")
   (setq frame-title-format '("" (:eval (if (buffer-file-name) " %f" " %b"))
-			     " --- " global-mode-string) ) )
+                             " --- " display-time-string " " battery-mode-line-string)))
 
 
 (leaf *xml
@@ -665,7 +834,7 @@ The following %-sequences are provided:
 
   (leaf swiper
     :ensure t
-    :bind (("M-s M-s" . swiper-thing-at-point)))
+    :bind (("M-s s" . swiper-thing-at-point)))
   ;; (custom-set-faces
   ;;  '(ivy-current-match
   ;;    ((((class color) (background light))
@@ -746,9 +915,7 @@ The following %-sequences are provided:
   (org-babel-do-load-languages 'org-babel-load-languages
                                '((plantuml . t))))
 (leaf eww
-  :bind ((eww-link-kyemap
-          ("e" . ace-link-eww))
-         (eww-mode-map
+  :bind ((eww-mode-map
           ("e" . ace-link-eww)))
   :config
   ;;; デフォルトの設定(参考)
@@ -876,21 +1043,4 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
 
 (when (eq system-type 'darwin)
 ;; enable bash
-(setq shell-file-name "/bin/bash")
-
-;; magit に path 引き継ぎ
-(require 'magit)
-(exec-path-from-shell-initialize)
-
-(leaf auto-complete-config
-  :disabled t
-  :ensure t
-  :setq ((ac-use-menu-map . t)
-         (ac-use-fuzzy . t))
-  :config
-  (ac-config-default)
-  (add-to-list 'ac-modes 'text-mode)
-  (add-to-list 'ac-modes 'fundamental-mode)
-  (add-to-list 'ac-modes 'org-mode)
-  (add-to-list 'ac-modes 'yatex-mode)
-  (ac-set-trigger-key "TAB")))
+(setq shell-file-name "/bin/bash"))
