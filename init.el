@@ -9,7 +9,7 @@
     (custom-set-variables
      '(package-archives '(("org"   . "https://orgmode.org/elpa/")
                           ("melpa" . "https://melpa.org/packages/")
-                          ("melpa" . "https://stable.melpa.org/packages/")
+                          ("melpa-stable" . "https://stable.melpa.org/packages/")
                           ("marmalade" . "http://marmalade-repo.org/packages/")
                           ("gnu"   . "https://elpa.gnu.org/packages/"))))
     (package-initialize))
@@ -124,6 +124,9 @@
     ((all-the-icons-scale-factor . 1.0)))
   (leaf doom-modeline
     :ensure t
+    :preface
+    (defun my:doom-modeline-set-x-modelene ()
+      "Do nothing")
     :custom
     ((doom-modeline-buffer-file-name-style . 'file-name)
      (doom-modeline-icon . t)
@@ -136,6 +139,32 @@
      (eol-mnemonic-undecided . "・"))
     :custom-face
     ((doom-modeline-bar . `((t (:background "MediumPurple")))))
+    :advice
+    ;; 余計なmodeline切り替えを無効に
+    ((:override doom-modeline-set-minimal-modeline
+                my:doom-modeline-set-x-modelene)
+     (:override doom-modeline-set-special-modeline
+                my:doom-modeline-set-x-modelene)
+     (:override doom-modeline-set-project-modeline
+                my:doom-modeline-set-x-modelene)
+     (:override doom-modeline-set-vcs-modeline
+                my:doom-modeline-set-x-modelene)
+     (:override doom-modeline-set-info-modeline
+                my:doom-modeline-set-x-modelene)
+     (:override doom-modeline-set-package-modeline
+                my:doom-modeline-set-x-modelene)
+     (:override doom-modeline-set-media-modeline
+                my:doom-modeline-set-x-modelene)
+     (:override doom-modeline-set-message-modeline
+                my:doom-modeline-set-x-modelene)
+     (:override doom-modeline-set-pdf-modeline
+                my:doom-modeline-set-x-modelene)
+     (:override doom-modeline-set-org-src-modeline
+                my:doom-modeline-set-x-modelene)
+     (:override doom-modeline-set-helm-modeline
+                my:doom-modeline-set-x-modelene)
+     (:override doom-modeline-set-timemachine-modeline
+                my:doom-modeline-set-x-modelene))
     :config
     (line-number-mode 1)
     (column-number-mode 1)
