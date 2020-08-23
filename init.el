@@ -51,12 +51,38 @@
   (defun backward-delete-word (arg)
     (interactive "p")
     (delete-region (point) (progn (backward-word arg) (point))))
+  (defun forward-delete-char (arg)
+    "Delete end of line smarter."
+    (interactive "p")
+    (if (eq (following-char) 10)
+        (delete-indentation 1)
+      (delete-char 1)))
+  (defun forward-to-symbol (arg)
+    (interactive "^p")
+    (let ((cnt arg)
+          (p (point)))
+      (if (natnump cnt)
+          (re-search-forward "\\(\\sw\\|\\s_\\)+" nil 'move cnt)
+        (while (< cnt 0)
+          (if (re-search-backward "\\(\\sw\\|\\s_\\)+" nil 'move)
+              (skip-syntax-backward "w_"))
+          (setq cnt (1+ cnt))))
+      (if (eq (match-beginning 0) p)
+          (re-search-forward "\\(\\sw\\|\\s_\\)+" nil 'move cnt))
+      (if (natnump arg) (goto-char (match-beginning 0)))
+      ))
+  (defun backward-to-symbol (arg)
+    (interactive "^p")
+    (forward-to-symbol (- arg)))
+
   :bind (([C-wheel-up] . text-scale-increase)
          ([C-wheel-down] . text-scale-decrease)
          ((kbd "C-a") . move-beginning-alt)
-         ((kbd "C-S-f") . forward-word)
-         ((kbd "C-S-b") . backward-word)
+         ((kbd "C-S-f") . forward-to-symbol)
+         ((kbd "C-S-b") . backward-to-symbol)
          ((kbd "C-<backspace>") . backward-delete-word)
+         ((kbd "C-d") . forward-delete-char)
+         ((kbd "C-z") . undo)
          )
   :custom
   `((menu-bar-mode . nil)
@@ -65,6 +91,7 @@
     (inhibit-compacting-font-caches . t)
     (inhibit-startup-screen . t)
     (initial-scratch-message . "")
+    (scroll-preserve-screen-position . t)
     )
   :config
   ;; スクリーンの最大化
@@ -85,7 +112,7 @@
   (setq kept-old-versions 1)
   (setq delete-old-versions t)
   (setq create-lockfiles nil)
-  ;; for 4k
+  ;; 画面分割の閾値 画面サイズが変わると更新 縦は分割させない 横は画面幅を分割閾値とすることで2分割までに制限
   (defun set-split-threshold-when-frame-size-changed (frame)
     (when (or (/= (window-pixel-width-before-size-change (frame-root-window frame))
                   (window-pixel-width (frame-root-window frame)))
@@ -187,25 +214,113 @@
           (doom-modeline-spc)
           (doom-modeline--buffer-name))
          'face (if (doom-modeline--active) 'doom-modeline-buffer-file 'mode-line-inactive)))
+      ;; adviceできないのでdoom-modelene-segments.elからコピーし再定義 inactive時も表示
       (doom-modeline-def-segment my/parrot
         "The party parrot animated icon. Requires `parrot-mode' to be enabled."
-        (when (and (doom-modeline--active)
-                   (bound-and-true-p parrot-mode))
+        (when (bound-and-true-p parrot-mode)
           (concat (parrot-create) (doom-modeline-spc) (doom-modeline-spc))))
       (doom-modeline-def-segment my/lsp
-        (when (and (doom-modeline--active)
-                   (bound-and-true-p lsp-mode))
+        (when (bound-and-true-p lsp-mode)
           (if-let (workspaces (lsp-workspaces))
               (concat (doom-modeline-lsp-icon "lsp:" 'success)
                       (string-join (--map (car (split-string (format "%s" (lsp--workspace-print it)) ":"))
                                                  workspaces)))
             (concat (doom-modeline-lsp-icon "lsp:" 'warning) (propertize "!" 'face 'warning)))))
+      (doom-modeline-def-segment my/vcs
+        "Displays the current branch, colored based on its state."
+        (let ((active t))
+          (when-let ((icon doom-modeline--vcs-icon)
+                     (text doom-modeline--vcs-text))
+            (concat
+             (doom-modeline-spc)
+             (propertize
+              (concat
+               (if active
+                   icon
+                 (doom-modeline-propertize-icon icon 'mode-line-inactive))
+               (doom-modeline-vspc))
+              'mouse-face 'mode-line-highlight
+              'help-echo (get-text-property 1 'help-echo vc-mode)
+              'local-map (get-text-property 1 'local-map vc-mode))
+             (if active
+                 text
+               (propertize text 'face 'mode-line-inactive))
+             (doom-modeline-spc)))))
+      (doom-modeline-def-segment my/buffer-position
+        "The buffer position information."
+        (let* ((active t)
+               (lc '(line-number-mode
+                     (column-number-mode
+                      (doom-modeline-column-zero-based "%l:%c" "%l:%C")
+                      "%l")
+                     (column-number-mode (doom-modeline-column-zero-based ":%c" ":%C"))))
+               (face (if active 'mode-line 'mode-line-inactive))
+               (mouse-face 'mode-line-highlight)
+               (local-map mode-line-column-line-number-mode-map))
+          (concat
+           (doom-modeline-spc)
+           (doom-modeline-spc)
 
+           (propertize (format-mode-line lc)
+                       'face face
+                       'help-echo "Buffer position\n\
+mouse-1: Display Line and Column Mode Menu"
+                       'mouse-face mouse-face
+                       'local-map local-map)
+
+           (if (and active
+                    (bound-and-true-p nyan-mode)
+                    (>= (window-width) nyan-minimum-window-width))
+               (concat
+                (doom-modeline-spc)
+                (doom-modeline-spc)
+                (propertize (nyan-create) 'mouse-face mouse-face))
+             (when doom-modeline-percent-position
+               (concat
+                (doom-modeline-spc)
+                (propertize (format-mode-line '("" doom-modeline-percent-position "%%"))
+                            'face face
+                            'help-echo "Buffer percentage\n\
+mouse-1: Display Line and Column Mode Menu"
+                            'mouse-face mouse-face
+                            'local-map local-map))))
+
+     (when (or line-number-mode column-number-mode doom-modeline-percent-position)
+       (doom-modeline-spc)))))
+      
       (doom-modeline-def-modeline 'main
         '(bar my/major-mode my/major-mode-name buffer-mule-info my/buffer-info)
-        '(input-method my/lsp checker process vcs buffer-position my/parrot)))
+        '(input-method my/lsp checker process my/vcs my/buffer-position my/parrot)))
     (doom-modeline-mode t))
   )
+
+(leaf hideshow
+  :ensure t
+  :hook ((c-mode-common-hook . hs-minor-mode)
+         (emacs-lisp-mode-hook . hs-minor-mode)
+         (java-mode-hook . hs-minor-mode)
+         (lisp-mode-hook . hs-minor-mode)
+         (parl-mode-hook . hs-minor-mode)
+         (sh-mode-hook . hs-minor-mode))
+  :bind ((hs-minor-mode-map ("C-i" . hs-toggle-hiding)))
+  )
+
+(leaf rainbow-delimiters
+  :ensure t
+  :custom-face
+  ((rainbow-delimiters-depth-1-face . `((t (:forground "#9a4040"))))
+   (rainbow-delimiters-depth-2-face . `((t (:forground "#ff5e5e"))))
+   (rainbow-delimiters-depth-3-face . `((t (:forground "#ffaa77"))))
+   (rainbow-delimiters-depth-4-face . `((t (:forground "#dddd77"))))
+   (rainbow-delimiters-depth-5-face . `((t (:forground "#80ee80"))))
+   (rainbow-delimiters-depth-6-face . `((t (:forground "#66bbff"))))
+   (rainbow-delimiters-depth-7-face . `((t (:forground "#da6bda"))))
+   (rainbow-delimiters-depth-8-face . `((t (:forground "#afafaf"))))
+   (rainbow-delimiters-depth-9-face . `((t (:forground "#f0f0f0")))))
+  :config
+  (define-globalized-minor-mode global-rainbow-delimiters-mode
+    rainbow-delimiters-mode rainbow-delimiters-mode)
+  (global-rainbow-delimiters-mode t))
 
 (leaf ssh
   :ensure t
@@ -393,6 +508,9 @@
 
     (advice-add 'omnisharp--do-server-start :around 'omnisharp--do-server-start-advice)
     )
+
+  (leaf open-in-msvs
+    :ensure t)
   )
 
 (leaf nxml-mode
@@ -841,15 +959,55 @@ The following %-sequences are provided:
 
   (leaf counsel
     :ensure t
+    :init
+    (defun ivy-with-thing-at-point (cmd)
+      (let ((ivy-initial-inputs-alist
+             (list
+              (cons cmd (thing-at-point 'symbol)))))
+        (funcall cmd)))
+    (defun counsel-rg-thing-at-point ()
+      (interactive)
+      (ivy-with-thing-at-point 'counsel-rg))
+    ;; directory を指定して ag やり直し．クエリは再利用する
+    (defun my-counsel-rg-in-dir (_arg)
+      "Search again with new root directory."
+      (let ((current-prefix-arg '(4)))
+        (counsel-ag ivy-text nil ""))) ;; also disable extra-ag-args
+    (ivy-add-actions
+     'counsel-rg
+     '(("r" my-counsel-rg-in-dir "search in directory")))
+
+    (defun counsel-bookmark-thing-at-point ()
+      (interactive)
+      (let ((ivy-initial-inputs-alist
+             (list (cons 'counsel-bookmark
+                         (format "%s:%d\t::%s\t::%s"
+                                 (buffer-name)
+                                 (line-number-at-pos)
+                                 (which-function)
+                                 (thing-at-point 'line))))))
+        (counsel-bookmark)))
+
+    (defun counsel-up-directory-or-delete ()
+      (interactive)
+      (if ivy--directory
+          (counsel-up-directory)
+        (ivy-kill-line)))
+
     :bind (("M-x" . counsel-M-x)
-           ("C-M-z" . counsel-fzf)
+           ;;("C-M-z" . counsel-fzf)
            ("C-M-r" . counsel-recentf)
-           ("C-x C-b" . counsel-ibuffer)
+           ;;("C-x C-b" . counsel-ibuffer)
            ("C-c i" . counsel-imenu)
            ("C-x b" . ivy-switch-buffer)
-           ("C-M-f" . counsel-rg)
+           ("C-M-f" . counsel-rg-thing-at-point)
            ("M-y" . counsel-yank-pop)
            ("C-x C-f" . counsel-find-file)
+           ("C-x C-b" . counsel-bookmark-thing-at-point)
+           (ivy-minibuffer-map
+            ("C-l" . counsel-up-directory-or-delete))
+           (ivy-minibuffer-map
+            ("<tab>" . ivy-alt-done))
            (counsel-find-file-map
             ("C-l" . counsel-up-directory))
            (counsel-find-file-map
@@ -864,24 +1022,6 @@ The following %-sequences are provided:
   (leaf swiper
     :ensure t
     :bind (("M-s s" . swiper-thing-at-point)))
-  ;; (custom-set-faces
-  ;;  '(ivy-current-match
-  ;;    ((((class color) (background light))
-  ;;      :background "#FFF3F3" :distant-foreground "#000000")
-  ;;     (((class color) (background dark))
-  ;;      :background "#404040" :distant-foreground "#abb2bf")))
-  ;;  '(ivy-minibuffer-match-face-1
-  ;;    ((((class color) (background light)) :foreground "#666666")
-  ;;     (((class color) (background dark)) :foreground "#999999")))
-  ;;  '(ivy-minibuffer-match-face-2
-  ;;    ((((class color) (background light)) :foreground "#c03333" :underline t)
-  ;;     (((class color) (background dark)) :foreground "#e04444" :underline t)))
-  ;;  '(ivy-minibuffer-match-face-3
-  ;;    ((((class color) (background light)) :foreground "#8585ff" :underline t)
-  ;;     (((class color) (background dark)) :foreground "#7777ff" :underline t)))
-  ;;  '(ivy-minibuffer-match-face-4
-  ;;    ((((class color) (background light)) :foreground "#439943" :underline t)
-  ;;     (((class color) (background dark)) :foreground "#33bb33" :underline t))))
 
   (leaf ivy-rich
     :ensure t
@@ -895,8 +1035,7 @@ The following %-sequences are provided:
     (dolist (command
              '(counsel-projectile-switch-project counsel-ibuffer))
       (add-to-list 'all-the-icons-ivy-buffer-commands command)))
-
-  )
+)
 
 (leaf google-translate
   :ensure t
