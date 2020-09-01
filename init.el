@@ -51,12 +51,38 @@
   (defun backward-delete-word (arg)
     (interactive "p")
     (delete-region (point) (progn (backward-word arg) (point))))
+  (defun forward-delete-char (arg)
+    "Delete end of line smarter."
+    (interactive "p")
+    (if (eq (following-char) 10)
+        (delete-indentation 1)
+      (delete-char 1)))
+  (defun forward-to-symbol (arg)
+    (interactive "^p")
+    (let ((cnt arg)
+          (p (point)))
+      (if (natnump cnt)
+          (re-search-forward "\\(\\sw\\|\\s_\\)+" nil 'move cnt)
+        (while (< cnt 0)
+          (if (re-search-backward "\\(\\sw\\|\\s_\\)+" nil 'move)
+              (skip-syntax-backward "w_"))
+          (setq cnt (1+ cnt))))
+      (if (eq (match-beginning 0) p)
+          (re-search-forward "\\(\\sw\\|\\s_\\)+" nil 'move cnt))
+      (if (natnump arg) (goto-char (match-beginning 0)))
+      ))
+  (defun backward-to-symbol (arg)
+    (interactive "^p")
+    (forward-to-symbol (- arg)))
+
   :bind (([C-wheel-up] . text-scale-increase)
          ([C-wheel-down] . text-scale-decrease)
          ((kbd "C-a") . move-beginning-alt)
-         ((kbd "C-S-f") . forward-word)
-         ((kbd "C-S-b") . backward-word)
+         ((kbd "C-S-f") . forward-to-symbol)
+         ((kbd "C-S-b") . backward-to-symbol)
          ((kbd "C-<backspace>") . backward-delete-word)
+         ((kbd "C-d") . forward-delete-char)
+         ((kbd "C-z") . undo)
          )
   :custom
   `((menu-bar-mode . nil)
@@ -65,6 +91,7 @@
     (inhibit-compacting-font-caches . t)
     (inhibit-startup-screen . t)
     (initial-scratch-message . "")
+    (scroll-preserve-screen-position . t)
     )
   :config
   ;; スクリーンの最大化
@@ -85,9 +112,15 @@
   (setq kept-old-versions 1)
   (setq delete-old-versions t)
   (setq create-lockfiles nil)
-  ;; for 4k
-  (setq split-height-threshold nil)
-  (setq split-width-threshold 320)
+  ;; 画面分割の閾値 画面サイズが変わると更新 縦は分割させない 横は画面幅を分割閾値とすることで2分割までに制限
+  (defun set-split-threshold-when-frame-size-changed (frame)
+    (when (or (/= (window-pixel-width-before-size-change (frame-root-window frame))
+                  (window-pixel-width (frame-root-window frame)))
+              (/= (window-pixel-height-before-size-change (frame-root-window frame))
+                  (window-pixel-height (frame-root-window frame))))
+      (setq split-height-threshold nil)
+      (setq split-width-threshold (frame-width))))
+  (add-hook 'window-size-change-functions 'set-split-threshold-when-frame-size-changed)
   )
 
 (leaf doom-themes
@@ -104,6 +137,14 @@
     ((nyan-bar-length . 10))
     :config
     (nyan-mode t))
+  (leaf parrot
+    :ensure t
+    :custom
+    :config
+    (parrot-mode t)
+    (add-hook 'lsp-after-initialize-hook #'parrot-start-animation)
+    (add-hook 'lsp-after-open-hook #'parrot-start-animation)
+    )
   (leaf all-the-icons
     :ensure t
     :custom
@@ -173,11 +214,113 @@
           (doom-modeline-spc)
           (doom-modeline--buffer-name))
          'face (if (doom-modeline--active) 'doom-modeline-buffer-file 'mode-line-inactive)))
+      ;; adviceできないのでdoom-modelene-segments.elからコピーし再定義 inactive時も表示
+      (doom-modeline-def-segment my/parrot
+        "The party parrot animated icon. Requires `parrot-mode' to be enabled."
+        (when (bound-and-true-p parrot-mode)
+          (concat (parrot-create) (doom-modeline-spc) (doom-modeline-spc))))
+      (doom-modeline-def-segment my/lsp
+        (when (bound-and-true-p lsp-mode)
+          (if-let (workspaces (lsp-workspaces))
+              (concat (doom-modeline-lsp-icon "lsp:" 'success)
+                      (string-join (--map (car (split-string (format "%s" (lsp--workspace-print it)) ":"))
+                                                 workspaces)))
+            (concat (doom-modeline-lsp-icon "lsp:" 'warning) (propertize "!" 'face 'warning)))))
+      (doom-modeline-def-segment my/vcs
+        "Displays the current branch, colored based on its state."
+        (let ((active t))
+          (when-let ((icon doom-modeline--vcs-icon)
+                     (text doom-modeline--vcs-text))
+            (concat
+             (doom-modeline-spc)
+             (propertize
+              (concat
+               (if active
+                   icon
+                 (doom-modeline-propertize-icon icon 'mode-line-inactive))
+               (doom-modeline-vspc))
+              'mouse-face 'mode-line-highlight
+              'help-echo (get-text-property 1 'help-echo vc-mode)
+              'local-map (get-text-property 1 'local-map vc-mode))
+             (if active
+                 text
+               (propertize text 'face 'mode-line-inactive))
+             (doom-modeline-spc)))))
+      (doom-modeline-def-segment my/buffer-position
+        "The buffer position information."
+        (let* ((active t)
+               (lc '(line-number-mode
+                     (column-number-mode
+                      (doom-modeline-column-zero-based "%l:%c" "%l:%C")
+                      "%l")
+                     (column-number-mode (doom-modeline-column-zero-based ":%c" ":%C"))))
+               (face (if active 'mode-line 'mode-line-inactive))
+               (mouse-face 'mode-line-highlight)
+               (local-map mode-line-column-line-number-mode-map))
+          (concat
+           (doom-modeline-spc)
+           (doom-modeline-spc)
+
+           (propertize (format-mode-line lc)
+                       'face face
+                       'help-echo "Buffer position\n\
+mouse-1: Display Line and Column Mode Menu"
+                       'mouse-face mouse-face
+                       'local-map local-map)
+
+           (if (and active
+                    (bound-and-true-p nyan-mode)
+                    (>= (window-width) nyan-minimum-window-width))
+               (concat
+                (doom-modeline-spc)
+                (doom-modeline-spc)
+                (propertize (nyan-create) 'mouse-face mouse-face))
+             (when doom-modeline-percent-position
+               (concat
+                (doom-modeline-spc)
+                (propertize (format-mode-line '("" doom-modeline-percent-position "%%"))
+                            'face face
+                            'help-echo "Buffer percentage\n\
+mouse-1: Display Line and Column Mode Menu"
+                            'mouse-face mouse-face
+                            'local-map local-map))))
+
+     (when (or line-number-mode column-number-mode doom-modeline-percent-position)
+       (doom-modeline-spc)))))
+      
       (doom-modeline-def-modeline 'main
         '(bar my/major-mode my/major-mode-name buffer-mule-info my/buffer-info)
-        '(input-method checker process vcs buffer-position )))
+        '(input-method my/lsp checker process my/vcs my/buffer-position my/parrot)))
     (doom-modeline-mode t))
   )
+
+(leaf hideshow
+  :ensure t
+  :hook ((c-mode-common-hook . hs-minor-mode)
+         (emacs-lisp-mode-hook . hs-minor-mode)
+         (java-mode-hook . hs-minor-mode)
+         (lisp-mode-hook . hs-minor-mode)
+         (parl-mode-hook . hs-minor-mode)
+         (sh-mode-hook . hs-minor-mode))
+  :bind ((hs-minor-mode-map ("C-i" . hs-toggle-hiding)))
+  )
+
+(leaf rainbow-delimiters
+  :ensure t
+  :custom-face
+  ((rainbow-delimiters-depth-1-face . `((t (:forground "#9a4040"))))
+   (rainbow-delimiters-depth-2-face . `((t (:forground "#ff5e5e"))))
+   (rainbow-delimiters-depth-3-face . `((t (:forground "#ffaa77"))))
+   (rainbow-delimiters-depth-4-face . `((t (:forground "#dddd77"))))
+   (rainbow-delimiters-depth-5-face . `((t (:forground "#80ee80"))))
+   (rainbow-delimiters-depth-6-face . `((t (:forground "#66bbff"))))
+   (rainbow-delimiters-depth-7-face . `((t (:forground "#da6bda"))))
+   (rainbow-delimiters-depth-8-face . `((t (:forground "#afafaf"))))
+   (rainbow-delimiters-depth-9-face . `((t (:forground "#f0f0f0")))))
+  :config
+  (define-globalized-minor-mode global-rainbow-delimiters-mode
+    rainbow-delimiters-mode rainbow-delimiters-mode)
+  (global-rainbow-delimiters-mode t))
 
 (leaf ssh
   :ensure t
@@ -188,7 +331,6 @@
   (with-eval-after-load 'ssh (shell-dirtrack-mode t)))
 
 (leaf company
-  :after t
   :bind (("<tab>" . company-indent-or-complete-common)
          (company-active-map
           ("C-n" . company-select-next))
@@ -215,7 +357,10 @@
   ;; (set-face-attribute 'company-scrollbar-bg nil :background "#002b37")
   (global-company-mode)
   (with-eval-after-load 'company
-  (add-to-list 'company-backends 'company-omnisharp))
+    ;;(add-to-list 'company-backends 'company-omnisharp)
+    ;;(add-to-list 'company-backends 'company-lsp)
+    (add-to-list 'company-backends 'company-elisp)
+    )
   )
 
 (leaf migemo
@@ -236,7 +381,7 @@
   )
 
 (leaf ripgrep
-  :ensure t 
+  :ensure t
   :custom
   ((ripgrep-executable . "rg")
    (ripgrep-arguments . '("-S"))))
@@ -326,9 +471,10 @@
     :ensure t
     )
 
+  ;; omniSharp lsp に移行中。問題なければ上記omnisharpは不要
   (leaf csharp-mode
     :ensure t
-    :hook ((csharp-mode-hook . my-csharp-mode-setup))
+    :hook ((csharp-mode-hook . lsp)) ;;((csharp-mode-hook . my-csharp-mode-setup))
     :config
     (defun my-csharp-mode-setup nil
       (omnisharp-mode)
@@ -340,7 +486,7 @@
       (setq truncate-lines t)
       (setq tab-width 4)
       (setq evil-shift-width 4)
-      ;;(setq omnisharp-server-executable-path "/mnt/c/Users/fj/.emacs.d/.cache/omnisharp/server/v1.34.1-linux/omnisharp/OmniSharp.exe")
+      (setq omnisharp-server-executable-path ".cache/omnisharp/server/v1.34.1-linux/omnisharp/OmniSharp.exe")
       (local-set-key
        (kbd "C-j")
        'omnisharp-go-to-definition-ex)
@@ -363,6 +509,9 @@
 
     (advice-add 'omnisharp--do-server-start :around 'omnisharp--do-server-start-advice)
     )
+
+  (leaf open-in-msvs
+    :ensure t)
   )
 
 (leaf nxml-mode
@@ -411,6 +560,147 @@
           (counsel-gtags-find-file (concat prefix target))
           )))
     )
+  )
+
+
+(leaf lsp-mode
+  :ensure t
+  :custom
+  ;; debug
+  ((lsp-print-io . t)
+  (lsp-trace . t)
+  (lsp-print-performance . t)
+  (lsp-enable-snippet . nil)
+  ;; general
+  (lsp-auto-guess-root . t)
+  ;;(lsp-document-sync-method . 'incremental) ;; always send incremental document
+  (lsp-document-sync-method . 2)
+  (lsp-prefer-capf . t)
+  (lsp-response-timeout . 5)
+  ;;(lsp-prefer-flymake . 'flymake)
+  (lsp-enable-completion-at-point . nil))
+  :bind
+  ((lsp-mode-map
+    ("C-c C-r"   . lsp-rename)))
+  :config
+  ;; if you are adding the support for your language server in separate repo use
+  (add-to-list 'lsp-language-id-configuration '(python-mode . "python"))
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-stdio-connection "pyls")
+                    :major-modes '(python-mode)
+                    :server-id 'pyls))
+
+  (add-to-list 'lsp-language-id-configuration '(csharp-mode . "csharp"))
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-stdio-connection '(".cache/lsp/omnisharp-roslyn/v1.35.3/OmniSharp.exe" "-lsp"))
+                    :major-modes '(csharp-mode)
+                    :server-id 'omnisharp))
+  (add-to-list 'lsp-language-id-configuration '(web-mode . "web"))
+  (lsp-register-client
+   (make-lsp-client :new-connection (lsp-stdio-connection '("vls"))
+                    :major-modes '(web-mode)
+                    :server-id 'vls))
+
+  ;; パンくずリスト。hookでdisableされるのを防ぐ
+  (lsp-headerline-breadcrumb-mode 1)
+  (remove-hook 'lsp-unconfigure-hook #'lsp-headerline--disable-breadcrumb t)
+
+  ;; LSP UI tools
+  (leaf lsp-ui
+    :ensure t
+    :custom
+    ;; lsp-ui-doc
+    ((lsp-ui-doc-enable . nil)
+    (lsp-ui-doc-header . t)
+    (lsp-ui-doc-include-signature . t)
+    (lsp-ui-doc-position . 'at-point) ;; top, bottom, or at-point
+    (lsp-ui-doc-max-width . 100)
+    (lsp-ui-doc-max-height . 30)
+    (lsp-ui-doc-use-childframe . t)
+    (lsp-ui-doc-use-webkit . t)
+    ;; lsp-ui-flycheck
+    (lsp-ui-flycheck-enable . nil)
+    ;; lsp-ui-sideline
+    (lsp-ui-sideline-enable . nil)
+    (lsp-ui-sideline-ignore-duplicate . t)
+    (lsp-ui-sideline-show-symbol . nil)
+    (lsp-ui-sideline-show-hover . nil)
+    (lsp-ui-sideline-show-diagnostics . nil)
+    (lsp-ui-sideline-show-code-actions . nil)
+    ;; lsp-ui-imenu
+    (lsp-ui-imenu-enable . nil)
+    (lsp-ui-imenu-kind-position . 'top)
+    ;; lsp-ui-peek
+    (lsp-ui-peek-enable . t)
+    (lsp-ui-peek-peek-height . 20)
+    (lsp-ui-peek-list-width . 50)
+    (lsp-ui-peek-fontify . 'on-demand)) ;; never, on-demand, or always
+    :preface
+    (defun lsp-ui-peek-find-definitions-or-pop ()
+      (interactive)
+      (if (bounds-of-thing-at-point 'word)
+          (lsp-ui-peek-find-definitions)
+        (xref-pop-marker-stack)))
+
+    (defun lsp-ui-peek-find-references-or-pop ()
+      (interactive)
+      (if (bounds-of-thing-at-point 'word)
+          (lsp-ui-peek-find-references)
+        (xref-pop-marker-stack)))
+    :bind
+    ((lsp-mode-map
+      ("C-j"   . lsp-ui-peek-find-definitions-or-pop))
+     (lsp-mode-map
+      ("C-S-j"   . lsp-ui-peek-find-references-or-pop))
+     (lsp-mode-map
+      ("C-h d"   . lsp-ui-doc-show))
+     (lsp-mode-map
+      ("C-h a"   . lsp-execute-code-action))
+     )
+    :hook
+    (lsp-mode . lsp-ui-mode)
+    )
+  )
+
+(leaf flycheck
+  :custom
+  ((flycheck-check-syntax-automatically . '(mode-enabled save idle-change))
+   (flycheck-idle-change-delay . 2))
+  :config
+  (add-hook 'flycheck-mode-hook
+            (lambda () (flycheck-add-mode 'javascript-eslint 'web-mode)))
+  )
+
+(leaf python-mode
+  :config
+  (add-hook 'python-mode-hook #'lsp)
+  )
+
+(leaf web-mode
+  :mode (("\\.vue\\'" . web-mode))
+  :custom
+  ((web-mode-markup-indent-offset . 2)
+   (web-mode-code-indent-offset . 0)
+   (web-mode-part-padding . 2)
+   (web-mode-auto-close-style . 2)
+   )
+  :config
+  (add-hook 'web-mode-hook #'lsp)
+  )
+
+(leaf arduino-mode
+  :disabled t
+  :custom
+  ((arduino-executable . "arduino_debug")
+   (flycheck-arduino-executable . "arduino_debug"))
+  :config
+
+  (defun my-arduino-mode-hook nil
+    (flycheck-arduino-setup)
+    (defvar-local flycheck-check-syntax-automatically '(save))
+    (flycheck-mode)
+    )
+  (add-hook 'arduino-mode-hook 'my-arduino-mode-hook)
   )
 
 (leaf *markdown
@@ -555,18 +845,15 @@ The following %-sequences are provided:
 (setq battery-status-function #'battery-linux-sysfs-wsl))
 
 (leaf *which-func
-  ;; 関数名表示
+  ;; 関数名表示 lsp-modeでは使わない
   :config
   (which-function-mode)
 
-  (setq mode-line-format (delete (assoc 'which-func-mode
-                                        mode-line-format) mode-line-format)
-        which-func-header-line-format '(which-func-mode ("" which-func-format)))
+  (setq which-func-header-line-format '(which-func-mode ("" which-func-format)))
+
   (defadvice which-func-ff-hook (after header-line activate)
-    (when which-func-mode
-      (setq mode-line-format (delete (assoc 'which-func-mode
-                                            mode-line-format) mode-line-format)
-            header-line-format which-func-header-line-format)))
+    (when (and which-func-mode (not (bound-and-true-p lsp-mode)))
+      (setq header-line-format which-func-header-line-format)))
 
   (defun show-file-name ()
     (interactive)
@@ -624,16 +911,16 @@ The following %-sequences are provided:
 	'((format "%s/%s/%s" year month day)
 	  (format "(%s:%s)" 24-hours minutes)))
   (display-time) ;; display-time-stringの有効化
-  ;; タイトルバーの書式設定 global-mode-stringにdisplay-time-stringが入っている
+  (display-battery-mode 1)
+  (setq battery-mode-line-format " %b%p%%")
+  (with-eval-after-load 'doom-modeline
+    ;; doom-modelineがbattery-mode-line-stringを更新させなくするのでremove
+    (advice-remove 'battery-update 'doom-modeline-update-battery-status))
+
   ;; バッファがファイルのときはフルパス、でなければバッファ名表示
   ;; if(buffer-file-name) の評価がsetq時で終わらないよう:eval
-  ;;(setq battery-update-interval 1)
-  ;;(setq display-time-interval 1)
-  (display-battery-mode 1)
-  ;; Either BATn or yeeloong-bat, basically.
-  (setq battery-mode-line-format " %b%p%%")
   (setq frame-title-format '("" (:eval (if (buffer-file-name) " %f" " %b"))
-			     " --- " global-mode-string) ) )
+                             " --- " display-time-string " " battery-mode-line-string)))
 
 
 (leaf *xml
@@ -673,15 +960,55 @@ The following %-sequences are provided:
 
   (leaf counsel
     :ensure t
+    :init
+    (defun ivy-with-thing-at-point (cmd)
+      (let ((ivy-initial-inputs-alist
+             (list
+              (cons cmd (thing-at-point 'symbol)))))
+        (funcall cmd)))
+    (defun counsel-rg-thing-at-point ()
+      (interactive)
+      (ivy-with-thing-at-point 'counsel-rg))
+    ;; directory を指定して ag やり直し．クエリは再利用する
+    (defun my-counsel-rg-in-dir (_arg)
+      "Search again with new root directory."
+      (let ((current-prefix-arg '(4)))
+        (counsel-ag ivy-text nil ""))) ;; also disable extra-ag-args
+    (ivy-add-actions
+     'counsel-rg
+     '(("r" my-counsel-rg-in-dir "search in directory")))
+
+    (defun counsel-bookmark-thing-at-point ()
+      (interactive)
+      (let ((ivy-initial-inputs-alist
+             (list (cons 'counsel-bookmark
+                         (format "%s:%d\t::%s\t::%s"
+                                 (buffer-name)
+                                 (line-number-at-pos)
+                                 (which-function)
+                                 (thing-at-point 'line))))))
+        (counsel-bookmark)))
+
+    (defun counsel-up-directory-or-delete ()
+      (interactive)
+      (if ivy--directory
+          (counsel-up-directory)
+        (ivy-kill-line)))
+
     :bind (("M-x" . counsel-M-x)
-           ("C-M-z" . counsel-fzf)
+           ;;("C-M-z" . counsel-fzf)
            ("C-M-r" . counsel-recentf)
-           ("C-x C-b" . counsel-ibuffer)
+           ;;("C-x C-b" . counsel-ibuffer)
            ("C-c i" . counsel-imenu)
            ("C-x b" . ivy-switch-buffer)
-           ("C-M-f" . counsel-rg)
+           ("C-M-f" . counsel-rg-thing-at-point)
            ("M-y" . counsel-yank-pop)
            ("C-x C-f" . counsel-find-file)
+           ("C-x C-b" . counsel-bookmark-thing-at-point)
+           (ivy-minibuffer-map
+            ("C-l" . counsel-up-directory-or-delete))
+           (ivy-minibuffer-map
+            ("<tab>" . ivy-alt-done))
            (counsel-find-file-map
             ("C-l" . counsel-up-directory))
            (counsel-find-file-map
@@ -695,25 +1022,7 @@ The following %-sequences are provided:
 
   (leaf swiper
     :ensure t
-    :bind (("M-s M-s" . swiper-thing-at-point)))
-  ;; (custom-set-faces
-  ;;  '(ivy-current-match
-  ;;    ((((class color) (background light))
-  ;;      :background "#FFF3F3" :distant-foreground "#000000")
-  ;;     (((class color) (background dark))
-  ;;      :background "#404040" :distant-foreground "#abb2bf")))
-  ;;  '(ivy-minibuffer-match-face-1
-  ;;    ((((class color) (background light)) :foreground "#666666")
-  ;;     (((class color) (background dark)) :foreground "#999999")))
-  ;;  '(ivy-minibuffer-match-face-2
-  ;;    ((((class color) (background light)) :foreground "#c03333" :underline t)
-  ;;     (((class color) (background dark)) :foreground "#e04444" :underline t)))
-  ;;  '(ivy-minibuffer-match-face-3
-  ;;    ((((class color) (background light)) :foreground "#8585ff" :underline t)
-  ;;     (((class color) (background dark)) :foreground "#7777ff" :underline t)))
-  ;;  '(ivy-minibuffer-match-face-4
-  ;;    ((((class color) (background light)) :foreground "#439943" :underline t)
-  ;;     (((class color) (background dark)) :foreground "#33bb33" :underline t))))
+    :bind (("M-s s" . swiper-thing-at-point)))
 
   (leaf ivy-rich
     :ensure t
@@ -727,8 +1036,7 @@ The following %-sequences are provided:
     (dolist (command
              '(counsel-projectile-switch-project counsel-ibuffer))
       (add-to-list 'all-the-icons-ivy-buffer-commands command)))
-
-  )
+)
 
 (leaf google-translate
   :ensure t
@@ -904,21 +1212,4 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
 
 (when (eq system-type 'darwin)
 ;; enable bash
-(setq shell-file-name "/bin/bash")
-
-;; magit に path 引き継ぎ
-(require 'magit)
-(exec-path-from-shell-initialize)
-
-(leaf auto-complete-config
-  :disabled t
-  :ensure t
-  :setq ((ac-use-menu-map . t)
-         (ac-use-fuzzy . t))
-  :config
-  (ac-config-default)
-  (add-to-list 'ac-modes 'text-mode)
-  (add-to-list 'ac-modes 'fundamental-mode)
-  (add-to-list 'ac-modes 'org-mode)
-  (add-to-list 'ac-modes 'yatex-mode)
-  (ac-set-trigger-key "TAB")))
+(setq shell-file-name "/bin/bash"))
