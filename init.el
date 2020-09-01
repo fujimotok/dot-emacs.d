@@ -354,13 +354,14 @@
           (omnisharp-go-to-definition)
         (pop-tag-mark)))
 
+    ;; csファイルからserver-startしたときにsln見失うbugfix
     (defun omnisharp--do-server-start-advice (orig-func &rest args)
       "temporary change default-directory to path-to-project"
       (let ((default-directory (file-name-directory
                                 (car args))))
         (apply orig-func args)))
 
-    ;;(advice-add 'omnisharp--do-server-start :around 'omnisharp--do-server-start-advice)
+    (advice-add 'omnisharp--do-server-start :around 'omnisharp--do-server-start-advice)
     )
   )
 
@@ -775,9 +776,7 @@ The following %-sequences are provided:
   (org-babel-do-load-languages 'org-babel-load-languages
                                '((plantuml . t))))
 (leaf eww
-  :bind ((eww-link-kyemap
-          ("e" . ace-link-eww))
-         (eww-mode-map
+  :bind ((eww-mode-map
           ("e" . ace-link-eww)))
   :config
   ;;; デフォルトの設定(参考)
