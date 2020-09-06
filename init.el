@@ -34,6 +34,8 @@
   ;;leafのデバッグ用パッケージ
   (leaf leaf-convert :ensure t))
 
+(leaf el-get :ensure t)
+
 (leaf cus-edit
   :doc "tools for customizing Emacs and Lisp packages"
   :tag "builtin" "faces" "help"
@@ -331,6 +333,7 @@ mouse-1: Display Line and Column Mode Menu"
   (with-eval-after-load 'ssh (shell-dirtrack-mode t)))
 
 (leaf company
+  :ensure t
   :bind (("<tab>" . company-indent-or-complete-common)
          (company-active-map
           ("C-n" . company-select-next))
@@ -355,12 +358,57 @@ mouse-1: Display Line and Column Mode Menu"
   ;; (set-face-attribute 'company-tooltip-common-selection nil :foreground "white" :background "#007771")
   ;; (set-face-attribute 'company-scrollbar-fg nil :background "#4cd0c1")
   ;; (set-face-attribute 'company-scrollbar-bg nil :background "#002b37")
-  (global-company-mode)
   (with-eval-after-load 'company
-    ;;(add-to-list 'company-backends 'company-omnisharp)
+    (add-to-list 'company-backends 'company-omnisharp)
     ;;(add-to-list 'company-backends 'company-lsp)
     (add-to-list 'company-backends 'company-elisp)
     )
+  (global-company-mode)
+
+  (leaf company-box
+    :ensure t
+    :custom
+    ((company-box-scrollbar . nil))
+    :config
+    (defconst company-box-icons--omnisharp-alist
+      '(("Text" . Text)
+        ("Method" . Method)
+        ("Function" . Function)
+        ("Constructor" . Constructor)
+        ("Field" . Field)
+        ("Variable" . Variable)
+        ("Class" . Class)
+        ("interface" . Interface)
+        ("Property" . Property)
+        ("Module" . Module)
+        ("Unit" . Unit)
+        ("Value" . Value)
+        ("Enum" . Enum)
+        ("Keyword" . Keyword)
+        ("Snippet" . Snippet)
+        ("Color" . Color)
+        ("File" . File)
+        ("Reference" . Reference))
+      "List of icon types to use with Omnisharp candidates.")
+
+    (defun company-box-icons--omnisharp (candidate)
+      (when (derived-mode-p 'csharp-mode)
+        (cdr
+         (assoc
+          (alist-get 'Kind (get-text-property 0 'omnisharp-item candidate))
+          company-box-icons--omnisharp-alist))))
+
+  (with-eval-after-load 'company-box
+      (add-to-list 'company-box-icons-functions 'company-box-icons--omnisharp))
+    (company-box-mode)
+    )
+  (leaf company-quickhelp
+    :ensure t
+    :hook (global-company-mode . company-quickhelp-mode)
+    :custom ((company-quickhelp-delay . 0.3)))
+  (leaf company-lsp
+    :ensure t)
+
   )
 
 (leaf migemo
@@ -395,6 +443,9 @@ mouse-1: Display Line and Column Mode Menu"
 
 (leaf *dired
   :config
+  (leaf all-the-icons-dired
+    :ensure t)
+  
   (leaf *windows
     :if (or (eq system-type 'windows-nt)
             (and (eq system-type 'gnu/linux) (file-exists-p "/proc/sys/fs/binfmt_misc/WSLInterop")))
@@ -474,11 +525,14 @@ mouse-1: Display Line and Column Mode Menu"
   ;; omniSharp lsp に移行中。問題なければ上記omnisharpは不要
   (leaf csharp-mode
     :ensure t
-    :hook ((csharp-mode-hook . lsp)) ;;((csharp-mode-hook . my-csharp-mode-setup))
+    :hook
+    (
+     ;;(csharp-mode-hook . lsp)
+     (csharp-mode-hook . my-csharp-mode-setup)
+     ) 
     :config
     (defun my-csharp-mode-setup nil
       (omnisharp-mode)
-      (flycheck-mode)
       (setq indent-tabs-mode nil)
       (setq c-syntactic-indentation t)
       (c-set-style "ellemtel")
@@ -486,12 +540,15 @@ mouse-1: Display Line and Column Mode Menu"
       (setq truncate-lines t)
       (setq tab-width 4)
       (setq evil-shift-width 4)
-      (setq omnisharp-server-executable-path ".cache/omnisharp/server/v1.34.1-linux/omnisharp/OmniSharp.exe")
+      (setq omnisharp-server-executable-path (expand-file-name "~/.emacs.d/.cache/lsp/omnisharp-roslyn/v1.37.1/OmniSharp.exe"))
       (local-set-key
        (kbd "C-j")
        'omnisharp-go-to-definition-ex)
       (local-set-key
-       (kbd "C-c r r")
+       (kbd "C-S-j")
+        'omnisharp-find-usages-ivy)
+      (local-set-key
+       (kbd "C-h a")
        'omnisharp-run-code-action-refactoring))
 
     (defun omnisharp-go-to-definition-ex nil
@@ -499,6 +556,47 @@ mouse-1: Display Line and Column Mode Menu"
       (if (bounds-of-thing-at-point 'word)
           (omnisharp-go-to-definition)
         (pop-tag-mark)))
+
+    (defun omnisharp--choose-and-go-to-quickfix-ivy (quickfixes &optional other-window)
+      (let* ((cands
+              (--map-indexed
+               (let ((this-quickfix-filename (cdr (assoc 'FileName it)))
+                     (this-quickfix-line (cdr (assoc 'Line it)))
+                     (this-quickfix-text (cdr (assoc 'Text it))))
+                 (concat (number-to-string it-index)
+                         " "
+                         this-quickfix-filename
+                         ":"
+                         (int-to-string this-quickfix-line)
+                         "\t"
+                         this-quickfix-text))
+               (omnisharp--vector-to-list quickfixes))))
+
+        (ivy-read "Omni-Reference: " cands
+                  :action (lambda (chosen-quickfix)
+                            (omnisharp-go-to-file-line-and-column (nth (string-to-number (car (split-string chosen-quickfix)))
+                                                                       (omnisharp--vector-to-list quickfixes))
+                                                                  other-window))
+                  :caller 'omnisharp-find-usages-ivy)))
+
+    (defun omnisharp--show-or-navigate-to-quickfixes-with-ivy (quickfix-response
+                                                               &optional other-window)
+      (-let (((&alist 'QuickFixes quickfixes) quickfix-response))
+        (cond ((equal 0 (length quickfixes))
+               (omnisharp--message "No implementations found."))
+              ((equal 1 (length quickfixes))
+               (omnisharp-go-to-file-line-and-column (-first-item (omnisharp--vector-to-list quickfixes))
+                                                     other-window))
+              (t
+               (omnisharp--choose-and-go-to-quickfix-ivy quickfixes other-window)))))
+
+    (defun omnisharp-find-usages-ivy (&optional other-window)
+      (interactive "P")
+      (omnisharp--send-command-to-server
+       "findusages"
+       (omnisharp--get-request-object)
+       (lambda (quickfix-response)
+         (omnisharp--show-or-navigate-to-quickfixes-with-ivy quickfix-response))))
 
     ;; csファイルからserver-startしたときにsln見失うbugfix
     (defun omnisharp--do-server-start-advice (orig-func &rest args)
@@ -572,7 +670,7 @@ mouse-1: Display Line and Column Mode Menu"
   (lsp-print-performance . t)
   (lsp-enable-snippet . nil)
   ;; general
-  (lsp-auto-guess-root . t)
+  (lsp-auto-guess-root . nil)
   ;;(lsp-document-sync-method . 'incremental) ;; always send incremental document
   (lsp-document-sync-method . 2)
   (lsp-prefer-capf . t)
@@ -590,11 +688,12 @@ mouse-1: Display Line and Column Mode Menu"
                     :major-modes '(python-mode)
                     :server-id 'pyls))
 
-  (add-to-list 'lsp-language-id-configuration '(csharp-mode . "csharp"))
-  (lsp-register-client
-   (make-lsp-client :new-connection (lsp-stdio-connection '(".cache/lsp/omnisharp-roslyn/v1.35.3/OmniSharp.exe" "-lsp"))
-                    :major-modes '(csharp-mode)
-                    :server-id 'omnisharp))
+  ;; (add-to-list 'lsp-language-id-configuration '(csharp-mode . "csharp"))
+  ;;  (lsp-register-client
+  ;;   (make-lsp-client :new-connection (lsp-stdio-connection '(".cache/lsp/omnisharp-roslyn/v1.37.0/OmniSharp.exe" "-lsp"))
+  ;;                    :major-modes '(csharp-mode)
+  ;;                    :server-id 'omnisharp))
+
   (add-to-list 'lsp-language-id-configuration '(web-mode . "web"))
   (lsp-register-client
    (make-lsp-client :new-connection (lsp-stdio-connection '("vls"))
@@ -947,7 +1046,6 @@ The following %-sequences are provided:
     :ensure t
     :bind ((ivy-minibuffer-map
             ("<escape>" . minibuffer-keyboard-quit)))
-    :require ivy-hydra
     :setq ((ivy-use-virtual-buffers . t)
            (ivy-tab-space . t)
            (ivy-height-alist . '((t lambda (_caller) (/ (frame-height) 3)))))
@@ -957,6 +1055,9 @@ The following %-sequences are provided:
       (minibuffer-depth-indicate-mode 1))
     (setcdr (assq t ivy-format-functions-alist) #'ivy-format-function-line)
     (ivy-mode 1))
+
+  (leaf ivy-hydra
+    :ensure t)
 
   (leaf counsel
     :ensure t
@@ -974,9 +1075,6 @@ The following %-sequences are provided:
       "Search again with new root directory."
       (let ((current-prefix-arg '(4)))
         (counsel-ag ivy-text nil ""))) ;; also disable extra-ag-args
-    (ivy-add-actions
-     'counsel-rg
-     '(("r" my-counsel-rg-in-dir "search in directory")))
 
     (defun counsel-bookmark-thing-at-point ()
       (interactive)
@@ -1018,6 +1116,9 @@ The following %-sequences are provided:
     :config
     (setq counsel-find-file-ignore-regexp (regexp-opt
                                            '("./" "../")))
+    (ivy-add-actions
+     'counsel-rg
+     '(("r" my-counsel-rg-in-dir "search in directory")))
     (counsel-mode 1))
 
   (leaf swiper
@@ -1084,6 +1185,7 @@ The following %-sequences are provided:
   (org-babel-do-load-languages 'org-babel-load-languages
                                '((plantuml . t))))
 (leaf eww
+  :disabled t
   :bind ((eww-mode-map
           ("e" . ace-link-eww)))
   :config
@@ -1213,3 +1315,6 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
 (when (eq system-type 'darwin)
 ;; enable bash
 (setq shell-file-name "/bin/bash"))
+
+(leaf magit
+  :ensure t)
