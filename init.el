@@ -94,6 +94,7 @@
     (inhibit-startup-screen . t)
     (initial-scratch-message . "")
     (scroll-preserve-screen-position . t)
+    (ring-bell-function . 'ignore)
     )
   :config
   ;; スクリーンの最大化
@@ -987,7 +988,9 @@ The following %-sequences are provided:
     (when (one-window-p)
       (split-window-horizontally)
       (pop-to-buffer nil))
-    (other-window 1))
+    (unless (window-minibuffer-p nil)
+        (other-window 1))
+    )
 
   ;; global-set-keyではほかのモードで上書きされてしまう ex)dired-mode
   (defvar window-t-minor-mode-map
@@ -1044,12 +1047,13 @@ The following %-sequences are provided:
   :config
   (leaf ivy
     :ensure t
-    :bind ((ivy-minibuffer-map
-            ("<escape>" . minibuffer-keyboard-quit)))
-    :setq ((ivy-use-virtual-buffers . t)
-           (ivy-tab-space . t)
-           (ivy-height-alist . '((t lambda (_caller) (/ (frame-height) 3)))))
-           
+    :bind
+    ((ivy-minibuffer-map
+      ("<escape>" . minibuffer-keyboard-quit)))
+    :custom
+    ((ivy-use-virtual-buffers . t)
+     (ivy-tab-space . t)
+     (ivy-height-alist . '((t lambda (_caller) (/ (frame-height) 3)))))
     :config
     (when (setq enable-recursive-minibuffers t)
       (minibuffer-depth-indicate-mode 1))
@@ -1074,7 +1078,7 @@ The following %-sequences are provided:
     (defun my-counsel-rg-in-dir (_arg)
       "Search again with new root directory."
       (let ((current-prefix-arg '(4)))
-        (counsel-ag ivy-text nil ""))) ;; also disable extra-ag-args
+        (counsel-rg ivy-text nil ""))) ;; also disable extra-ag-args
 
     (defun counsel-bookmark-thing-at-point ()
       (interactive)
@@ -1318,3 +1322,13 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
 
 (leaf magit
   :ensure t)
+
+(leaf eldoc
+  :hook (emacs-lisp-mode-hook . turn-on-eldoc-mode)
+  :preface
+  (defun my:shutup-eldoc-message (f &optional string)
+    (unless (active-minibuffer-window)
+      (funcall f string)))
+  :advice (:around eldoc-message
+                   my:shutup-eldoc-message)
+  )
