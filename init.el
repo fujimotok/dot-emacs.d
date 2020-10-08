@@ -158,7 +158,7 @@
     (defun my:doom-modeline-set-x-modelene ()
       "Do nothing")
     :custom
-    ((doom-modeline-buffer-file-name-style . 'file-name)
+    ((doom-modeline-buffer-file-name-style . 'buffer-name)
      (doom-modeline-icon . t)
      (doom-modeline-major-mode-icon . t)
      (doom-modeline-major-mode-color-icon . t)
@@ -764,7 +764,7 @@ mouse-1: Display Line and Column Mode Menu"
 
 (leaf flycheck
   :custom
-  ((flycheck-check-syntax-automatically . '(mode-enabled save idle-change))
+  ((flycheck-check-syntax-automatically . '(mode-enabled save))
    (flycheck-idle-change-delay . 2))
   :config
   (add-hook 'flycheck-mode-hook
@@ -1331,4 +1331,10 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
       (funcall f string)))
   :advice (:around eldoc-message
                    my:shutup-eldoc-message)
+  )
+
+(leaf *ediff
+  :custom
+  ((ediff-window-setup-function . 'ediff-setup-windows-plain)
+   (ediff-split-window-function . 'split-window-horizontally))
   )
