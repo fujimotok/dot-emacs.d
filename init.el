@@ -673,7 +673,7 @@ mouse-1: Display Line and Column Mode Menu"
    (flycheck-idle-change-delay . 2))
   :config
   (add-hook 'flycheck-mode-hook
-            (lambda () (flycheck-add-mode 'javascript-eslint 'web-mode)))
+            (lambda () (flycheck-add-mode 'javascript-eslint 'vue-mode)))
   )
 
 (leaf python-mode
@@ -681,17 +681,20 @@ mouse-1: Display Line and Column Mode Menu"
   (add-hook 'python-mode-hook #'lsp)
   )
 
-(leaf web-mode
-  :mode (("\\.vue\\'" . web-mode))
-  :custom
-  ((web-mode-markup-indent-offset . 2)
-   (web-mode-code-indent-offset . 0)
-   (web-mode-part-padding . 2)
-   (web-mode-auto-close-style . 2)
-   )
+(leaf vue-mode
+  :ensure t
+  :mode (("\\.vue\\'" . vue-mode))
   :config
-  (add-hook 'web-mode-hook #'lsp)
-  )
+  (leaf add-node-modules-path
+    :ensure t
+    :config
+    (add-hook 'vue-mode-hook #'add-node-modules-path))
+  (leaf prettier
+    :ensure t
+    :config
+    (add-hook 'vue-mode-hook #'prettier-mode))
+  (add-hook 'vue-mode-hook #'lsp)
+)
 
 (leaf arduino-mode
   :disabled t
