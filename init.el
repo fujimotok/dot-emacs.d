@@ -80,6 +80,12 @@
          ((kbd "C-a") . move-beginning-alt)
          ((kbd "C-S-f") . forward-to-symbol)
          ((kbd "C-S-b") . backward-to-symbol)
+         ((kbd "C-S-n") . forward-list)
+         ((kbd "C-S-p") . backward-list)
+         ((kbd "C-S-u") . backward-up-list)
+         ((kbd "C-S-d") . down-list)
+         ((kbd "C-S-a") . beginning-of-defun)
+         ((kbd "C-S-e") . end-of-defun)
          ((kbd "C-<backspace>") . backward-delete-word)
          ((kbd "C-d") . forward-delete-char)
          ((kbd "C-z") . undo)
@@ -1212,3 +1218,12 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
 (when (eq system-type 'darwin)
 ;; enable bash
 (setq shell-file-name "/bin/bash"))
+
+(leaf *ediff
+  :custom
+  ((ediff-window-setup-function . 'ediff-setup-windows-plain)
+   (ediff-split-window-function . 'split-window-horizontally)
+   (ediff-current-diff-overlay-A . t)
+   (ediff-current-diff-overlay-B . t)
+   )
+  )
