@@ -774,13 +774,29 @@ mouse-1: Display Line and Column Mode Menu"
    (flycheck-idle-change-delay . 2))
   :config
   (add-hook 'flycheck-mode-hook
-            (lambda () (flycheck-add-mode 'javascript-eslint 'vue-mode)))
+            (lambda () (flycheck-add-mode 'javascript-eslint 'vue-mode)
+              (flycheck-add-mode 'javascript-eslint 'web-mode)))
   )
 
 (leaf python-mode
   :config
   (add-hook 'python-mode-hook #'lsp)
   )
+
+(leaf web-mode
+  :ensure t
+  :mode (("\\.js\\'" . web-mode))
+  :config
+  (leaf add-node-modules-path
+    :ensure t
+    :config
+    (add-hook 'web-mode-hook #'add-node-modules-path))
+  (leaf prettier
+    :ensure t
+    :config
+    (add-hook 'web-mode-hook #'prettier-mode))
+  (add-hook 'web-mode-hook #'lsp)
+)
 
 (leaf vue-mode
   :ensure t
