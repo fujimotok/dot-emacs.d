@@ -1,7 +1,5 @@
-;; when use proxy, uncomment this.
-;;(setq url-proxy-services
-;;      '(("http" . "")
-;;        ("https" . "")))
+;; when use proxy, eval sexp. set "http" "https".
+;; (customize-variable 'url-proxy-services)
 
 ;; leafのロード
 (prog1 "prepare leaf"
@@ -547,7 +545,8 @@ mouse-1: Display Line and Column Mode Menu"
       (setq truncate-lines t)
       (setq tab-width 4)
       (setq evil-shift-width 4)
-      (setq omnisharp-server-executable-path (expand-file-name "~/.emacs.d/.cache/lsp/omnisharp-roslyn/v1.37.1/OmniSharp.exe"))
+      ;; set your omnisharp execute path
+      ;; (customize-variable 'omnisharp-server-executable-path)
       (local-set-key
        (kbd "C-j")
        'omnisharp-go-to-definition-ex)
