@@ -1,3 +1,7 @@
+(setq custom-file (locate-user-emacs-file "custom.el"))
+(when (file-exists-p custom-file)
+  (load custom-file))
+
 ;; when use proxy, eval sexp. set "http" "https".
 ;; (customize-variable 'url-proxy-services)
 
@@ -33,12 +37,6 @@
   (leaf leaf-convert :ensure t))
 
 (leaf el-get :ensure t)
-
-(leaf cus-edit
-  :doc "tools for customizing Emacs and Lisp packages"
-  :tag "builtin" "faces" "help"
-  :custom `((custom-file . ,(locate-user-emacs-file "custom.el"))))
-
 
 (leaf cus-start
   :doc "builtin"
