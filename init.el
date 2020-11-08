@@ -1195,10 +1195,10 @@ This is done by modifying the contents of `RESULT' in place."
     :ensure t
     :config
     (add-hook 'web-mode-hook #'add-node-modules-path))
-  (leaf prettier
+  (leaf js-auto-format-mode
     :ensure t
     :config
-    (add-hook 'web-mode-hook #'prettier-mode))
+    (add-hook 'web-mode-hook #'js-auto-format-mode))
   (add-hook 'web-mode-hook #'lsp)
 )
 
@@ -1210,10 +1210,10 @@ This is done by modifying the contents of `RESULT' in place."
     :ensure t
     :config
     (add-hook 'vue-mode-hook #'add-node-modules-path))
-  (leaf prettier
+  (leaf js-auto-format-mode
     :ensure t
     :config
-    (add-hook 'vue-mode-hook #'prettier-mode))
+    (add-hook 'vue-mode-hook #'js-auto-format-mode))
   (add-hook 'vue-mode-hook #'lsp)
 )
 
