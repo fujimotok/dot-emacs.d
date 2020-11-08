@@ -363,7 +363,7 @@ mouse-1: Display Line and Column Mode Menu"
   ;; (set-face-attribute 'company-scrollbar-bg nil :background "#002b37")
   (with-eval-after-load 'company
     (add-to-list 'company-backends 'company-omnisharp)
-    ;;(add-to-list 'company-backends 'company-lsp)
+    (add-to-list 'company-backends 'company-lsp)
     (add-to-list 'company-backends 'company-elisp)
     )
   (global-company-mode)
