@@ -354,6 +354,8 @@ mouse-1: Display Line and Column Mode Menu"
          (company-selection-wrap-around . t)
          (completion-ignore-case . t)
          (company-dabbrev-downcase))
+  :hook ((emacs-lisp-mode-hook . set-company-backend-lisp-mode)
+         (omnisharp-mode-hook . set-company-backend-omnisharp-mode))
   :config
   ;; (set-face-attribute 'company-tooltip nil :foreground "#36c6b0" :background "#244f36")
   ;; (set-face-attribute 'company-tooltip-common nil :foreground "white" :background "#244f36")
@@ -362,16 +364,21 @@ mouse-1: Display Line and Column Mode Menu"
   ;; (set-face-attribute 'company-scrollbar-fg nil :background "#4cd0c1")
   ;; (set-face-attribute 'company-scrollbar-bg nil :background "#002b37")
   (with-eval-after-load 'company
-    (add-to-list 'company-backends 'company-omnisharp)
-    (add-to-list 'company-backends 'company-lsp)
-    (add-to-list 'company-backends 'company-elisp)
-    )
-  (global-company-mode)
+    (setq company-backends '(company-dabbrev-code company-dabbrev company-files company-capf company-keywords)))
+
+  (defun set-company-backend-lisp-mode ()
+    (add-to-list (make-local-variable 'company-backends)
+                 'company-elisp))
+
+  (defun set-company-backend-omnisharp-mode ()
+    (add-to-list (make-local-variable 'company-backends)
+                 'company-omnisharp))
 
   (leaf company-box
     :ensure t
     :custom
     ((company-box-scrollbar . nil))
+    :hook ((company-mode-hook . company-box-mode))
     :config
     (defconst company-box-icons--omnisharp-alist
       '(("Text" . Text)
@@ -401,17 +408,16 @@ mouse-1: Display Line and Column Mode Menu"
           (alist-get 'Kind (get-text-property 0 'omnisharp-item candidate))
           company-box-icons--omnisharp-alist))))
 
-  (with-eval-after-load 'company-box
-      (add-to-list 'company-box-icons-functions 'company-box-icons--omnisharp))
-    (company-box-mode)
-    )
+    (with-eval-after-load 'company-box
+      (add-to-list 'company-box-icons-functions 'company-box-icons--omnisharp)))
   (leaf company-quickhelp
     :ensure t
-    :hook (global-company-mode . company-quickhelp-mode)
+    :hook ((company-box-mode-hook . company-quickhelp-mode))
     :custom ((company-quickhelp-delay . 0.3)))
   (leaf company-lsp
     :ensure t)
 
+  (global-company-mode)
   )
 
 (leaf migemo
@@ -1168,7 +1174,7 @@ This is done by modifying the contents of `RESULT' in place."
       ("C-h a"   . lsp-execute-code-action))
      )
     :hook
-    (lsp-mode . lsp-ui-mode)
+    ((lsp-mode . lsp-ui-mode))
     )
   )
 
@@ -1199,7 +1205,6 @@ This is done by modifying the contents of `RESULT' in place."
     :ensure t
     :config
     (add-hook 'web-mode-hook #'js-auto-format-mode))
-  (add-hook 'web-mode-hook #'lsp)
 )
 
 (leaf vue-mode
@@ -1214,7 +1219,6 @@ This is done by modifying the contents of `RESULT' in place."
     :ensure t
     :config
     (add-hook 'vue-mode-hook #'js-auto-format-mode))
-  (add-hook 'vue-mode-hook #'lsp)
 )
 
 (leaf arduino-mode
@@ -1761,7 +1765,7 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   :ensure t)
 
 (leaf eldoc
-  :hook (emacs-lisp-mode-hook . turn-on-eldoc-mode)
+  :hook ((emacs-lisp-mode-hook . turn-on-eldoc-mode))
   :preface
   (defun my:shutup-eldoc-message (f &optional string)
     (unless (active-minibuffer-window)
@@ -1775,3 +1779,4 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   ((ediff-window-setup-function . 'ediff-setup-windows-plain)
    (ediff-split-window-function . 'split-window-horizontally))
   )
+
