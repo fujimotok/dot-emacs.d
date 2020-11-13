@@ -353,7 +353,8 @@ mouse-1: Display Line and Column Mode Menu"
          (company-minimum-prefix-length . 2)
          (company-selection-wrap-around . t)
          (completion-ignore-case . t)
-         (company-dabbrev-downcase))
+         (company-dabbrev-downcase . nil)
+         (company-dabbrev-char-regexp . "[A-Za-z_][[:alnum:]_]*"))
   :hook ((emacs-lisp-mode-hook . set-company-backend-lisp-mode)
          (omnisharp-mode-hook . set-company-backend-omnisharp-mode))
   :config
@@ -1184,42 +1185,34 @@ This is done by modifying the contents of `RESULT' in place."
    (flycheck-idle-change-delay . 2))
   :config
   (add-hook 'flycheck-mode-hook
-            (lambda () (flycheck-add-mode 'javascript-eslint 'vue-mode)
+            (lambda ()
+              (flycheck-add-mode 'javascript-eslint 'vue-mode)
+              (flycheck-add-mode 'javascript-eslint 'vue-html-mode)
+              (flycheck-add-mode 'javascript-eslint 'css-mode)
               (flycheck-add-mode 'javascript-eslint 'web-mode)))
   )
 
 (leaf python-mode
   :config
-  (add-hook 'python-mode-hook #'lsp)
-  )
-
-(leaf web-mode
-  :ensure t
-  :mode (("\\.js\\'" . web-mode))
-  :config
-  (leaf add-node-modules-path
-    :ensure t
-    :config
-    (add-hook 'web-mode-hook #'add-node-modules-path))
-  (leaf js-auto-format-mode
-    :ensure t
-    :config
-    (add-hook 'web-mode-hook #'js-auto-format-mode))
-)
+  (add-hook 'python-mode-hook #'lsp))
 
 (leaf vue-mode
   :ensure t
   :mode (("\\.vue\\'" . vue-mode))
-  :config
-  (leaf add-node-modules-path
-    :ensure t
-    :config
-    (add-hook 'vue-mode-hook #'add-node-modules-path))
-  (leaf js-auto-format-mode
-    :ensure t
-    :config
-    (add-hook 'vue-mode-hook #'js-auto-format-mode))
+  :hook ((vue-mode-hook . flycheck-mode)
+         (vue-mode-hook . turn-mode))
+  :custom ((js-indent-level . 2))
 )
+
+(leaf js-auto-format-mode
+  :ensure t
+  :config
+  (add-hook 'vue-mode-hook #'js-auto-format-mode))
+
+(leaf add-node-modules-path
+  :ensure t
+  :config
+  (add-hook 'vue-mode-hook #'add-node-modules-path))
 
 (leaf arduino-mode
   :disabled t
