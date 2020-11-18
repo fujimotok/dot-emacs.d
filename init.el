@@ -375,6 +375,19 @@ mouse-1: Display Line and Column Mode Menu"
     (add-to-list (make-local-variable 'company-backends)
                  'company-omnisharp))
 
+  (defun set-company-backend-js-mode ()
+    (make-local-variable 'company-backends)
+    (add-to-list 'company-backends
+                 'company-tern)
+    (add-to-list 'company-backends
+                 'company-web-html))
+
+  (leaf company-tern
+    :el-get kevinushey/company-tern)
+
+  (leaf company-web
+    :ensure t) 
+
   (leaf company-box
     :ensure t
     :custom
@@ -1200,8 +1213,11 @@ This is done by modifying the contents of `RESULT' in place."
   :ensure t
   :mode (("\\.vue\\'" . vue-mode))
   :hook ((vue-mode-hook . flycheck-mode)
-         (vue-mode-hook . turn-mode))
+         (vue-mode-hook . tern-mode)
+         (vue-mode-hook . set-company-backend-js-mode)
+         (vue-mode-hook .sgml-electric-tag-pair-mode))
   :custom ((js-indent-level . 2))
+  :config
 )
 
 (leaf js-auto-format-mode
@@ -1772,4 +1788,3 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   ((ediff-window-setup-function . 'ediff-setup-windows-plain)
    (ediff-split-window-function . 'split-window-horizontally))
   )
-
