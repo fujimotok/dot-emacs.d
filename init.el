@@ -1215,7 +1215,7 @@ This is done by modifying the contents of `RESULT' in place."
   :hook ((vue-mode-hook . flycheck-mode)
          (vue-mode-hook . tern-mode)
          (vue-mode-hook . set-company-backend-js-mode)
-         (vue-mode-hook .sgml-electric-tag-pair-mode))
+         (vue-mode-hook . sgml-electric-tag-pair-mode))
   :custom ((js-indent-level . 2))
   :config
 )
