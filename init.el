@@ -368,7 +368,8 @@ mouse-1: Display Line and Column Mode Menu"
          (company-dabbrev-downcase . nil)
          (company-dabbrev-char-regexp . "[A-Za-z_][[:alnum:]_]*"))
   :hook ((emacs-lisp-mode-hook . set-company-backend-lisp-mode)
-         (omnisharp-mode-hook . set-company-backend-omnisharp-mode))
+         (omnisharp-mode-hook . set-company-backend-omnisharp-mode)
+         (shell-mode-hook . set-company-backend-shell-mode))
   :config
   ;; (set-face-attribute 'company-tooltip nil :foreground "#36c6b0" :background "#244f36")
   ;; (set-face-attribute 'company-tooltip-common nil :foreground "white" :background "#244f36")
@@ -393,6 +394,9 @@ mouse-1: Display Line and Column Mode Menu"
                  'company-tern)
     (add-to-list 'company-backends
                  'company-web-html))
+
+  (defun set-company-backend-shell-mode ()
+    (set (make-local-variable 'company-backends) '(company-capf)))
 
   (leaf company-tern
     :el-get kevinushey/company-tern)
