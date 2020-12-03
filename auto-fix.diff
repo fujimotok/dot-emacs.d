@@ -1,0 +1,14 @@
+diff --git a/auto-fix.el b/auto-fix.el
+index 1af0e45..4a239ad 100644
+--- a/auto-fix.el
++++ b/auto-fix.el
+@@ -224,8 +224,7 @@ arguments can be set as a list via ‘auto-fix-option`."
+   "Create temporary file at same directory for creating patch."
+   (let ((basename (file-name-base buffer-file-name))
+         (suffix (concat "." (file-name-extension buffer-file-name))))
+-    (make-empty-file (concat auto-fix-temp-file-prefix basename suffix)) ; return nil
+-    (concat default-directory auto-fix-temp-file-prefix basename suffix)))
++    (make-temp-file-internal basename nil suffix "")))
+ 
+ (defun auto-fix--delete-whole-line (&optional arg)
+   "Delete the current line without putting it in the `kill-ring'.

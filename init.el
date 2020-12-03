@@ -1,3 +1,15 @@
+;; Speed up startup
+(defvar default-file-name-handler-alist file-name-handler-alist)
+(defvar default-gc-cons-threshold gc-cons-threshold)
+(setq file-name-handler-alist nil)
+(setq gc-cons-threshold (* 1024 1024 100))
+(add-hook
+ 'emacs-startup-hook
+ (lambda ()
+   "Restore defalut values after startup."
+   (setq file-name-handler-alist default-file-name-handler-alist)
+   (setq gc-cons-threshold default-gc-cons-threshold)))
+
 (setq custom-file (locate-user-emacs-file "custom.el"))
 (when (file-exists-p custom-file)
   (load custom-file))
@@ -462,6 +474,10 @@ mouse-1: Display Line and Column Mode Menu"
   :config
   ;; win環境でsvnがsjisで吐くのでbufferも追従するように与える
   (add-to-list 'process-coding-system-alist '("[sS][vV][nN]" . sjis-dos))
+
+  (add-hook 'shell-mode-hook
+            (lambda ()
+              (set-buffer-process-coding-system 'sjis-dos 'sjis-dos)))
   )
 
 (leaf *dired
@@ -1220,10 +1236,17 @@ This is done by modifying the contents of `RESULT' in place."
   :config
 )
 
-(leaf js-auto-format-mode
-  :ensure t
+(leaf auto-fix.el
+  :el-get tomoya/auto-fix.el
   :config
-  (add-hook 'vue-mode-hook #'js-auto-format-mode))
+  (add-hook 'auto-fix-mode-hook
+            (lambda () (add-hook 'before-save-hook #'auto-fix-before-save)))
+  (defun setup-js-auto-fix ()
+    (setq-local auto-fix-command "eslint")
+    (setq-local auto-fix-option "--fix")
+    (auto-fix-mode +1))
+  (add-hook 'vue-mode-hook #'setup-js-auto-fix)
+  (add-hook 'js-mode-hook #'setup-js-auto-fix))
 
 (leaf add-node-modules-path
   :ensure t
@@ -1788,3 +1811,15 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   ((ediff-window-setup-function . 'ediff-setup-windows-plain)
    (ediff-split-window-function . 'split-window-horizontally))
   )
+
+(leaf *pulse-line
+  :custom ((pulse-iterations . 1))
+  :config
+  (defun pulse-line (&rest _)
+    "Pulse the current line."
+    (pulse-momentary-highlight-one-line (point)))
+
+  (dolist (command '(scroll-up-command scroll-down-command
+                                       recenter-top-bottom other-window))
+    (advice-add command :after #'pulse-line)))
+
