@@ -401,6 +401,9 @@ mouse-1: Display Line and Column Mode Menu"
   (leaf company-tern
     :el-get kevinushey/company-tern)
 
+  (leaf tern
+    :ensure t)
+
   (leaf company-web
     :ensure t) 
 
@@ -505,6 +508,7 @@ mouse-1: Display Line and Column Mode Menu"
     (add-hook 'dired-mode-hook
               '(lambda ()
                  (define-key dired-mode-map "\C-o" 'dired-open-file)
+                 (define-key dired-mode-map "\C-l" 'dired-up-directory)
                  (all-the-icons-dired-mode))))
 
   (leaf *darwin
@@ -1232,25 +1236,14 @@ This is done by modifying the contents of `RESULT' in place."
 (leaf vue-mode
   :ensure t
   :mode (("\\.vue\\'" . vue-mode))
-  :hook ((vue-mode-hook . flycheck-mode)
+  :hook ((vue-mode-hook . auto-format-vue)
+         (vue-mode-hook . flycheck-mode)
          (vue-mode-hook . tern-mode)
          (vue-mode-hook . set-company-backend-js-mode)
          (vue-mode-hook . sgml-electric-tag-pair-mode))
   :custom ((js-indent-level . 2))
   :config
 )
-
-(leaf auto-fix.el
-  :el-get tomoya/auto-fix.el
-  :config
-  (add-hook 'auto-fix-mode-hook
-            (lambda () (add-hook 'before-save-hook #'auto-fix-before-save)))
-  (defun setup-js-auto-fix ()
-    (setq-local auto-fix-command "eslint")
-    (setq-local auto-fix-option "--fix")
-    (auto-fix-mode +1))
-  (add-hook 'vue-mode-hook #'setup-js-auto-fix)
-  (add-hook 'js-mode-hook #'setup-js-auto-fix))
 
 (leaf add-node-modules-path
   :ensure t
@@ -1827,3 +1820,16 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
                                        recenter-top-bottom other-window))
     (advice-add command :after #'pulse-line)))
 
+(defun set-frame-alpha (a)
+  (interactive "nset alpha[0-100]: ")
+  (set-frame-parameter nil 'alpha a))
+
+(defun auto-format-vue ()
+  (add-hook 'after-save-hook 'eslint-fix-file nil 'local))
+
+(defun eslint-fix-file ()
+  (interactive)
+  (message "eslint --fix %s" (buffer-name))
+  (call-process "eslint" nil nil nil "--fix" (buffer-file-name))
+  (message "eslint --fix complete")
+  (revert-buffer t t nil))
