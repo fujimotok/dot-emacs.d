@@ -1067,10 +1067,6 @@ This is done by modifying the contents of `RESULT' in place."
     :ensure t)
   )
 
-(leaf nxml-mode
-  :mode "\\.xaml\\'"
-  )
-
 (leaf *cpp
   :config
   ;; todo: coding style 4 tab etc...
@@ -1487,7 +1483,8 @@ The following %-sequences are provided:
                              " --- " display-time-string " " battery-mode-line-string)))
 
 
-(leaf *xml
+(leaf nxml-mode
+  :mode "\\.xaml\\'"
   :bind ((nxml-mode-map
           ("C-c C-o" . hs-toggle-hiding))
          (nxml-mode-map
