@@ -121,7 +121,7 @@
   (global-auto-revert-mode)  ;; 外部からの変更を自動読み込み
   (global-hl-line-mode t)                   ;; 現在行をハイライト
   (show-paren-mode t)                       ;; 対応する括弧をハイライト
-  (setq show-paren-style 'mixed)            ;; 括弧のハイライトの設定。
+  (setq show-paren-style 'expression)       ;; 括弧のハイライトの設定。
   (transient-mark-mode t)                   ;; 選択範囲をハイライト
   (setq backup-directory-alist '((".*" . "~/.emacs.d/auto-save")))
   (setq version-control t)
@@ -129,6 +129,7 @@
   (setq kept-old-versions 1)
   (setq delete-old-versions t)
   (setq create-lockfiles nil)
+  (setq-default left-fringe-width 20)
   ;; 画面分割の閾値 画面サイズが変わると更新 縦は分割させない 横は画面幅を分割閾値とすることで2分割までに制限
   (defun set-split-threshold-when-frame-size-changed (frame)
     (when (or (/= (window-pixel-width-before-size-change (frame-root-window frame))
@@ -144,7 +145,8 @@
   :ensure t
   :config
   (load-theme 'doom-dracula t))
-  (set-frame-font "ricty diminished-10.5")
+(set-frame-font "ricty diminished-10.5")
+(set-face-attribute 'fringe nil :background "#2a2c38" :foreground "#888882")
 
 (leaf *mode-line
   :config
@@ -361,7 +363,7 @@ mouse-1: Display Line and Column Mode Menu"
   :setq ((company-auto-expand . t)
          (company-transformers quote
                                (company-sort-by-backend-importance))
-         (company-idle-delay . 0)
+         (company-idle-delay . nil)
          (company-minimum-prefix-length . 2)
          (company-selection-wrap-around . t)
          (completion-ignore-case . t)
@@ -387,6 +389,10 @@ mouse-1: Display Line and Column Mode Menu"
   (defun set-company-backend-omnisharp-mode ()
     (add-to-list (make-local-variable 'company-backends)
                  'company-omnisharp))
+
+  (defun set-company-backend-python-mode ()
+    (add-to-list (make-local-variable 'company-backends)
+                 'company-lsp))
 
   (defun set-company-backend-js-mode ()
     (make-local-variable 'company-backends)
@@ -446,7 +452,7 @@ mouse-1: Display Line and Column Mode Menu"
   (leaf company-quickhelp
     :ensure t
     :hook ((company-box-mode-hook . company-quickhelp-mode))
-    :custom ((company-quickhelp-delay . 0.3)))
+    :custom ((company-quickhelp-delay . 1)))
   (leaf company-lsp
     :ensure t)
 
@@ -481,6 +487,7 @@ mouse-1: Display Line and Column Mode Menu"
   :config
   ;; win環境でsvnがsjisで吐くのでbufferも追従するように与える
   (add-to-list 'process-coding-system-alist '("[sS][vV][nN]" . sjis-dos))
+  (add-to-list 'process-coding-system-alist '("python" . sjis-dos))
 
   (add-hook 'shell-mode-hook
             (lambda ()
@@ -1225,9 +1232,19 @@ This is done by modifying the contents of `RESULT' in place."
               (flycheck-add-mode 'javascript-eslint 'web-mode)))
   )
 
-(leaf python-mode
-  :config
-  (add-hook 'python-mode-hook #'lsp))
+(leaf *python-mode
+  :hook (python-mode-hook . (lambda () (lsp) (set-company-backend-python-mode) (local-set-key (kbd "<f5>") 'my-pdb)))
+  :preface
+  (defun my-pdb ()
+    (interactive)
+    (pdb (concat "python -m pdb "
+                 (buffer-file-name (current-buffer)))))
+  )
+
+(leaf pyvenv
+    :ensure t
+    :hook (python-mode-hook . (lambda () (pyvenv-mode 1))))
+
 
 (leaf vue-mode
   :ensure t
@@ -1830,3 +1847,19 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   (call-process "eslint" nil nil nil "--fix" (buffer-file-name))
   (message "eslint --fix complete")
   (revert-buffer t t nil))
+
+(leaf *gud-mode
+  :config
+  (defun gud-print-at-symbol ()
+    (interactive)
+    (let ((cursor-symbol-pos (bounds-of-thing-at-point 'symbol)))
+      (if cursor-symbol-pos
+          (save-excursion (set-mark (car cursor-symbol-pos))
+                          (goto-char (cdr cursor-symbol-pos))
+                          (gud-print (car cursor-symbol-pos))
+                          (deactivate-mark t)))))
+  (global-set-key (kbd "<f8>") 'gud-print-at-symbol)
+  (global-set-key (kbd "<f10>") 'gud-next) ;; step over
+  (global-set-key (kbd "<f11>") 'gud-step) ;; step in
+  (global-set-key (kbd "S-<f11>") 'gud-finish) ;; step out
+  )
