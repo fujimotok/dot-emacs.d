@@ -993,6 +993,7 @@ This is done by modifying the contents of `RESULT' in place."
 
     (defun my-csharp-mode-setup nil
       (omnisharp-mode)
+      (flycheck-mode)
       (setq indent-tabs-mode nil)
       (setq c-syntactic-indentation t)
       (c-set-style "ellemtel")
