@@ -139,6 +139,7 @@
       (setq split-height-threshold nil)
       (setq split-width-threshold (frame-width))))
   (add-hook 'window-size-change-functions 'set-split-threshold-when-frame-size-changed)
+  (add-hook 'prog-mode-hook #'hs-minor-mode)
   )
 
 (leaf doom-themes
@@ -1864,3 +1865,8 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   (global-set-key (kbd "<f11>") 'gud-step) ;; step in
   (global-set-key (kbd "S-<f11>") 'gud-finish) ;; step out
   )
+
+(leaf focus
+  :ensure t
+  :config
+  (add-hook 'prog-mode-hook #'focus-mode))
