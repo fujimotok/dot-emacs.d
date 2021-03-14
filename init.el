@@ -137,7 +137,7 @@
               (/= (window-pixel-height-before-size-change (frame-root-window frame))
                   (window-pixel-height (frame-root-window frame))))
       (setq split-height-threshold nil)
-      (setq split-width-threshold (frame-width))))
+      (setq split-width-threshold (- frame-width (* left-fringe-width 2)))))
   (add-hook 'window-size-change-functions 'set-split-threshold-when-frame-size-changed)
   (add-hook 'prog-mode-hook #'hs-minor-mode)
   )
