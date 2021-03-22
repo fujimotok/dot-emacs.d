@@ -1284,7 +1284,7 @@ This is done by modifying the contents of `RESULT' in place."
   :config
   (add-hook 'markdown-mode-hook
             (lambda nil
-              (markdown-mode-cyclic t))))
+              (outline-hide-sublevels 1))))
 
 ;; shellの環境設定
 (when (not (eq system-type 'windows-nt))
