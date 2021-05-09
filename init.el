@@ -1865,3 +1865,6 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   (global-set-key (kbd "<f11>") 'gud-step) ;; step in
   (global-set-key (kbd "S-<f11>") 'gud-finish) ;; step out
   )
+
+(leaf crowi
+  :el-get hirocarma/emacs-crowi)
