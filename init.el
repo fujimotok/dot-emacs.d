@@ -1512,6 +1512,7 @@ The following %-sequences are provided:
           ("C-c C-a" . hs-show-all)))
   :mode (("\\.xaml\\'" . nxml-mode))
   :config
+  (setq nxml-slash-auto-complete-flag t)
   (add-hook 'nxml-mode-hook
             '(lambda nil
                (hs-minor-mode 1)
