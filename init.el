@@ -1575,6 +1575,19 @@ The following %-sequences are provided:
           (counsel-up-directory)
         (ivy-kill-line)))
 
+    (defun my-ivy--directory-enter (&optional arg)
+      (interactive "p")
+      (ivy-insert-current)
+      (let (dir)
+        (if (and
+             (> ivy--length 0)
+             (not (string= (ivy-state-current ivy-last) "./"))
+             (setq dir (ivy-expand-file-if-directory (ivy-state-current ivy-last))))
+            (progn
+              (ivy--cd dir)
+              (ivy--exhibit))
+          (ivy-insert-current))))
+
     :bind (("M-x" . counsel-M-x)
            ;;("C-M-z" . counsel-fzf)
            ("C-M-r" . counsel-recentf)
@@ -1588,11 +1601,11 @@ The following %-sequences are provided:
            (ivy-minibuffer-map
             ("C-l" . counsel-up-directory-or-delete))
            (ivy-minibuffer-map
-            ("<tab>" . ivy-alt-done))
+            ("<tab>" . my-ivy--directory-enter))
            (counsel-find-file-map
             ("C-l" . counsel-up-directory))
            (counsel-find-file-map
-            ("<tab>" . ivy-alt-done)))
+            ("<tab>" . my-ivy--directory-enter)))
     :setq ((ivy-on-del-error-function function ignore)
            (ivy-initial-inputs-alist . nil))
     :config
