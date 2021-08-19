@@ -1282,6 +1282,29 @@ This is done by modifying the contents of `RESULT' in place."
 
 (leaf *markdown
   :config
+  (defun markdown-insert-image-from-clipboard ()
+    (interactive)
+    (let ((filepath))
+      (if (eq 1
+              (call-process-shell-command
+               (format "%s %s %s"
+                       "powershell.exe"
+                       "-Command"
+                       "$clip = Get-Clipboard -Format Image; if ($null -eq $clip) {exit 1}")
+               nil))
+          (message "no image on a clipboard")
+        (setq filepath (read-file-name "Save file path: "))
+        (call-process-shell-command
+         (format "%s %s %s'%s'%s"
+                 "powershell.exe"
+                 "-Command"
+                 "$clip = Get-Clipboard -Format Image; if ($null -ne $clip) { $clip.Save("
+                 filepath
+                 ") }")
+         (insert (format "![](%s)" (file-relative-name filepath)))
+         (markdown-display-inline-images)
+         ))))
+
   (add-hook 'markdown-mode-hook
             (lambda nil
               (outline-hide-sublevels 1))))
