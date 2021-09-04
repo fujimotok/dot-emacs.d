@@ -109,6 +109,7 @@
     (initial-scratch-message . "")
     (scroll-preserve-screen-position . t)
     (ring-bell-function . 'ignore)
+    (gc-cons-threshold . 12800000)
     )
   :config
   ;; スクリーンの最大化
@@ -137,7 +138,7 @@
               (/= (window-pixel-height-before-size-change (frame-root-window frame))
                   (window-pixel-height (frame-root-window frame))))
       (setq split-height-threshold nil)
-      (setq split-width-threshold (- frame-width (* left-fringe-width 2)))))
+      (setq split-width-threshold nil)))
   (add-hook 'window-size-change-functions 'set-split-threshold-when-frame-size-changed)
   (add-hook 'prog-mode-hook #'hs-minor-mode)
   )
@@ -372,7 +373,9 @@ mouse-1: Display Line and Column Mode Menu"
          (company-dabbrev-char-regexp . "[A-Za-z_][[:alnum:]_]*"))
   :hook ((emacs-lisp-mode-hook . set-company-backend-lisp-mode)
          (omnisharp-mode-hook . set-company-backend-omnisharp-mode)
-         (shell-mode-hook . set-company-backend-shell-mode))
+         ;;(shell-mode-hook . set-company-backend-shell-mode)
+         ;; lsp-modeがbackendsを書き換えるので、書き換え後をhookして元に戻す
+         (lsp-after-initialize-hook . set-company-backend-lsp-mode))
   :config
   ;; (set-face-attribute 'company-tooltip nil :foreground "#36c6b0" :background "#244f36")
   ;; (set-face-attribute 'company-tooltip-common nil :foreground "white" :background "#244f36")
@@ -381,7 +384,8 @@ mouse-1: Display Line and Column Mode Menu"
   ;; (set-face-attribute 'company-scrollbar-fg nil :background "#4cd0c1")
   ;; (set-face-attribute 'company-scrollbar-bg nil :background "#002b37")
   (with-eval-after-load 'company
-    (setq company-backends '(company-dabbrev-code company-dabbrev company-files company-capf company-keywords)))
+    ;; リストに直接置くと左から優先度して最初のbackendのみ使う。リストの要素にリスト渡すとグループと呼び、backendが同時に機能する。
+    (setq company-backends '((company-dabbrev-code company-dabbrev company-files company-capf company-keywords))))
 
   (defun set-company-backend-lisp-mode ()
     (add-to-list (make-local-variable 'company-backends)
@@ -391,9 +395,8 @@ mouse-1: Display Line and Column Mode Menu"
     (add-to-list (make-local-variable 'company-backends)
                  'company-omnisharp))
 
-  (defun set-company-backend-python-mode ()
-    (add-to-list (make-local-variable 'company-backends)
-                 'company-lsp))
+  (defun set-company-backend-lsp-mode ()
+    (setq-local company-backends '((company-dabbrev-code company-dabbrev company-files company-capf company-keywords))))
 
   (defun set-company-backend-js-mode ()
     (make-local-variable 'company-backends)
@@ -454,11 +457,9 @@ mouse-1: Display Line and Column Mode Menu"
     :ensure t
     :hook ((company-box-mode-hook . company-quickhelp-mode))
     :custom ((company-quickhelp-delay . 1)))
-  (leaf company-lsp
-    :ensure t)
-
   (global-company-mode)
   )
+
 
 (leaf migemo
   :ensure t
@@ -1133,20 +1134,18 @@ This is done by modifying the contents of `RESULT' in place."
   (lsp-auto-guess-root . nil)
   ;;(lsp-document-sync-method . 'incremental) ;; always send incremental document
   (lsp-document-sync-method . 2)
-  (lsp-prefer-capf . t)
   (lsp-response-timeout . 5)
-  ;;(lsp-prefer-flymake . 'flymake)
-  (lsp-enable-completion-at-point . nil))
+  )
   :bind
   ((lsp-mode-map
     ("C-c C-r"   . lsp-rename)))
   :config
   ;; if you are adding the support for your language server in separate repo use
-  (add-to-list 'lsp-language-id-configuration '(python-mode . "python"))
-  (lsp-register-client
-   (make-lsp-client :new-connection (lsp-stdio-connection "pyls")
-                    :major-modes '(python-mode)
-                    :server-id 'pyls))
+  ;; (add-to-list 'lsp-language-id-configuration '(python-mode . "python"))
+  ;; (lsp-register-client
+  ;;  (make-lsp-client :new-connection (lsp-stdio-connection "pyright")
+  ;;                   :major-modes '(python-mode)
+  ;;                   :server-id 'pyright))
 
   ;; (add-to-list 'lsp-language-id-configuration '(csharp-mode . "csharp"))
   ;;  (lsp-register-client
@@ -1217,7 +1216,8 @@ This is done by modifying the contents of `RESULT' in place."
       ("C-h a"   . lsp-execute-code-action))
      )
     :hook
-    ((lsp-mode . lsp-ui-mode))
+    ((lsp-mode-hook . lsp-ui-mode)
+     (lsp-mode-hook . lsp-completion-mode))
     )
   )
 
@@ -1235,7 +1235,7 @@ This is done by modifying the contents of `RESULT' in place."
   )
 
 (leaf *python-mode
-  :hook (python-mode-hook . (lambda () (lsp) (set-company-backend-python-mode) (local-set-key (kbd "<f5>") 'my-pdb)))
+  :hook (python-mode-hook . (lambda () (lsp) (local-set-key (kbd "<f5>") 'my-pdb)))
   :preface
   (defun my-pdb ()
     (interactive)
@@ -1245,7 +1245,7 @@ This is done by modifying the contents of `RESULT' in place."
 
 (leaf pyvenv
     :ensure t
-    :hook (python-mode-hook . (lambda () (pyvenv-mode 1))))
+    :hook (python-mode-hook . (lambda () (pyvenv-mode 1) (pyvenv-activate "venv"))))
 
 
 (leaf vue-mode
