@@ -1905,3 +1905,16 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
 
 (leaf crowi
   :el-get hirocarma/emacs-crowi)
+
+(defun color-hex2rgba (hex)
+  (interactive "scolor code (#rrggbbaa): #")
+  (let* ((conv (lambda (s e) (string-to-number (substring hex s e) 16)))
+         (r (funcall conv 0 2))
+         (g (funcall conv 2 4))
+         (b (funcall conv 4 6))
+         (a (/ (funcall conv 6 8) 255.0)))
+    (format "rgba(%d, %d, %d, %.2f)" r g b a)))
+
+(defun color-rgba2hex (r g b a)
+  (interactive "nr(0-255): \nng(0-255): \nnb(0-255): \nna(0-100): ")
+  (format "#%02X%02X%02X%02X" r g b (* (/ a 100.0) 255)))
