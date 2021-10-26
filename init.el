@@ -1535,6 +1535,24 @@ The following %-sequences are provided:
           ("C-c C-a" . hs-show-all)))
   :mode (("\\.xaml\\'" . nxml-mode))
   :config
+  ;; エラー行にマークがつくようにadvice
+  (defun rng-mark-error-advice (message beg end)
+    (let ((overlays (overlays-in beg end)) (continue t))
+      (while (and overlays continue)
+        (let ((o (car overlays)))
+	  (when (and (eq (overlay-get o 'category) 'rng-error)
+		     (= (overlay-start o) beg)
+		     (= (overlay-end o) end))
+	    (overlay-put o
+		         'before-string
+                         (propertize "!" 'display 
+                                     (list 'left-fringe
+                                           'right-triangle)))
+	    (setq continue nil)))
+        (setq overlays (cdr overlays)))))
+  (advice-add 'rng-mark-error :after 'rng-mark-error-advice)
+  ;; エラー箇所に波下線を出すface設定
+  (set-face-attribute 'rng-error nil :underline '(:color "red" :style wave))
   (setq nxml-slash-auto-complete-flag t)
   (add-hook 'nxml-mode-hook
             '(lambda nil
