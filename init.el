@@ -1925,6 +1925,7 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   :el-get hirocarma/emacs-crowi)
 
 (defun color-hex2rgba (hex)
+  "rrggbbaa -> r(0-255), g(0-255), b(0-255), a(0.0-1.0)"
   (interactive "scolor code (#rrggbbaa): #")
   (let* ((conv (lambda (s e) (string-to-number (substring hex s e) 16)))
          (r (funcall conv 0 2))
@@ -1934,5 +1935,6 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
     (format "rgba(%d, %d, %d, %.2f)" r g b a)))
 
 (defun color-rgba2hex (r g b a)
-  (interactive "nr(0-255): \nng(0-255): \nnb(0-255): \nna(0-100): ")
-  (format "#%02X%02X%02X%02X" r g b (* (/ a 100.0) 255)))
+  "r(0-255), g(0-255), b(0-255), a(0.0-1.0) -> rrggbbaa"
+  (interactive "nr(0-255): \nng(0-255): \nnb(0-255): \nna(0.0-1.0): ")
+  (format "#%02X%02X%02X%02X" r g b (* a 255)))
