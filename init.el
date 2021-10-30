@@ -1711,7 +1711,8 @@ The following %-sequences are provided:
            "en" "ja")
        (if asciip
            "ja" "en")
-       string 'current-buffer))))
+       string 'current-buffer)))
+  (defun google-translate--search-tkk () "Search TKK." (list 430675 2721866130)))
 
 
 (leaf org
