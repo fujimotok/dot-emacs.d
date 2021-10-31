@@ -1941,3 +1941,12 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   "r(0-255), g(0-255), b(0-255), a(0.0-1.0) -> rrggbbaa"
   (interactive "nr(0-255): \nng(0-255): \nnb(0-255): \nna(0.0-1.0): ")
   (format "#%02X%02X%02X%02X" r g b (* a 255)))
+
+(leaf go-mode
+  :ensure t
+  :hook ((go-mode-hook . my-go-mode-hook))
+  :config
+  (defun my-go-mode-hook ()
+    (add-hook 'before-save-hook 'gofmt-before-save)
+    (setq tab-width 2)))
+
