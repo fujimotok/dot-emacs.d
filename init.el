@@ -1281,6 +1281,8 @@ This is done by modifying the contents of `RESULT' in place."
   )
 
 (leaf *markdown
+  :custom
+  ((markdown-fontify-code-blocks-natively . t))
   :config
   (defun markdown-insert-image-from-clipboard ()
     (interactive)
