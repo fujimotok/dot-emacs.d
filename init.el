@@ -1950,3 +1950,9 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
     (add-hook 'before-save-hook 'gofmt-before-save)
     (setq tab-width 2)))
 
+(leaf *shell
+  :preface
+  (defun shell-advice (org-func &rest args)
+    (funcall org-func (generate-new-buffer-name "*shell*")))
+  :advice
+  (:around shell shell-advice))
