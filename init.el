@@ -1690,8 +1690,10 @@ The following %-sequences are provided:
     (counsel-mode 1))
 
   (leaf swiper
-    :ensure t
-    :bind (("M-s s" . swiper-thing-at-point)))
+    :ensure t    
+    :bind (("M-s s" . swiper-thing-at-point)
+           (isearch-mode-map
+            ("C-i" . swiper-from-isearch))))
 
   (leaf ivy-rich
     :ensure t
