@@ -85,9 +85,38 @@
     (interactive "^p")
     (forward-to-symbol (- arg)))
 
+  ;; emacs 28.1から入る予定？
+  (defun isearch-forward-thing-at-point ()
+    "Do incremental search forward for the \"thing\" found near point.
+Like ordinary incremental search except that the \"thing\" found at point
+is added to the search string initially.  The \"thing\" is defined by
+`bounds-of-thing-at-point'.  You can customize the variable
+`isearch-forward-thing-at-point' to define a list of symbols to try
+to find a \"thing\" at point.  For example, when the list contains
+the symbol `region' and the region is active, then text from the
+active region is added to the search string."
+    (interactive)
+    (isearch-forward nil 1)
+    (let ((bounds (seq-some (lambda (thing)
+                              (bounds-of-thing-at-point thing))
+                            '(region url symbol))))
+      (cond
+       (bounds
+        (when (use-region-p)
+          (deactivate-mark))
+        (when (< (car bounds) (point))
+	  (goto-char (car bounds)))
+        (isearch-yank-string
+         (buffer-substring-no-properties (car bounds) (cdr bounds))))
+       (t
+        (setq isearch-error "No thing at point")
+        (isearch-push-state)
+        (isearch-update)))))
+
   :bind (([C-wheel-up] . text-scale-increase)
          ([C-wheel-down] . text-scale-decrease)
          ((kbd "C-a") . move-beginning-alt)
+         ((kbd "C-s") . isearch-forward-thing-at-point)
          ((kbd "C-S-f") . forward-to-symbol)
          ((kbd "C-S-b") . backward-to-symbol)
          ((kbd "C-S-n") . forward-list)
