@@ -269,6 +269,8 @@ active region is added to the search string."
         "The party parrot animated icon. Requires `parrot-mode' to be enabled."
         (when (bound-and-true-p parrot-mode)
           (concat (parrot-create) (doom-modeline-spc) (doom-modeline-spc))))
+      (doom-modeline-def-segment my/ime
+          (concat "" w32-ime-mode-line-state-indicator))
       (doom-modeline-def-segment my/lsp
         (when (bound-and-true-p lsp-mode)
           (if-let (workspaces (lsp-workspaces))
@@ -340,7 +342,7 @@ mouse-1: Display Line and Column Mode Menu"
       
       (doom-modeline-def-modeline 'main
         '(bar my/major-mode my/major-mode-name buffer-mule-info my/buffer-info)
-        '(input-method my/lsp checker process my/vcs my/buffer-position my/parrot)))
+        '(input-method my/lsp checker process my/ime my/vcs my/buffer-position my/parrot)))
     (doom-modeline-mode t))
   )
 
@@ -2038,3 +2040,14 @@ after
               (newline))
             result)
     ))
+
+(leaf tr-ime
+  :if (eq system-type 'windows-nt)
+  :ensure t
+  :custom ((default-input-method . "W32-IME")
+           (w32-ime-mode-line-state-indicator . "Ａ")
+           (w32-ime-mode-line-state-indicator-list . '("-" "あ" "Ａ")))
+  :config
+  (advice-add 'w32-ime-init-mode-line-display :override (lambda ()))
+  (tr-ime-standard-install)
+  (w32-ime-initialize))
