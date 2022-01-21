@@ -51,8 +51,12 @@
 ;; スクリーンの最大化
 ;; (set-frame-parameter nil 'fullscreen 'maximized) for wsl?
 ;; (toggle-frame-maximized)
+
+;; フォント表示改善など
 (setq frame-inhibit-implied-resize t)
 (setq inhibit-compacting-font-caches t)
+
+;; 初期表示を空のscratchに変更
 (setq initial-scratch-message "")
 (setq inhibit-startup-screen t)
 

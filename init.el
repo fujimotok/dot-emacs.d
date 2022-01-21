@@ -3,22 +3,6 @@
 ;;; Commentary:
 ;;; Code:
 
-;; Speed up startup
-(defvar default-file-name-handler-alist file-name-handler-alist)
-(defvar default-gc-cons-threshold gc-cons-threshold)
-(setq file-name-handler-alist
-      nil)
-(setq gc-cons-threshold
-      (* 1024 1024 100))
-(add-hook
- 'emacs-startup-hook
- (lambda ()
-   "Restore defalut values after startup."
-   (setq file-name-handler-alist
-         default-file-name-handler-alist)
-   (setq gc-cons-threshold
-         default-gc-cons-threshold)))
-
 (setq custom-file
       (locate-user-emacs-file
        "custom.el"))
@@ -160,18 +144,9 @@ active region is added to the search string."
          ((kbd "C-<backspace>") . backward-delete-word)
          ((kbd "C-d") . forward-delete-char)
          ((kbd "C-z") . undo))
-  :custom `((menu-bar-mode . nil)
-            (scroll-bar-mode . nil)
-            (tool-bar-mode . nil)
-            (inhibit-compacting-font-caches . t)
-            (inhibit-startup-screen . t)
-            (initial-scratch-message . "")
-            (scroll-preserve-screen-position . t)
-            (ring-bell-function . 'ignore)
-            (gc-cons-threshold . 12800000))
-  :config ;; スクリーンの最大化
-  ;;(set-frame-parameter nil 'fullscreen 'maximized) for wsl?
-  (toggle-frame-maximized)
+  :custom `((scroll-preserve-screen-position . t)
+            (ring-bell-function . 'ignore))
+  :config
   (set-default-coding-systems
    'utf-8-unix)
   (setq-default
