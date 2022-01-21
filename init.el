@@ -491,6 +491,11 @@ mouse-1: Display Line and Column Mode Menu"
     (doom-modeline-mode t)))
 
 (leaf
+  lispy
+  :ensure t
+  :hook ((emacs-lisp-mode-hook . lispy-mode)))
+
+(leaf
   hideshow
   :ensure t
   :hook ((c-mode-common-hook . hs-minor-mode)
