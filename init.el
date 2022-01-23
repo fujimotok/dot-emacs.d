@@ -51,54 +51,17 @@
 (leaf el-get :ensure t)
 
 (leaf
+  utils
+  :el-get fujimotok/emacs-utils
+  :config (when (and (eq system-type 'gnu/linux)
+                     (file-exists-p
+                      "/proc/sys/fs/binfmt_misc/WSLInterop"))
+            (battery-wsl-init)))
+
+(leaf
   cus-start
   :doc "builtin"
-  :init (defun move-beginning-alt ()
-          (interactive)
-          (if (bolp)
-              (back-to-indentation)
-            (beginning-of-line)))
-  (defun backward-delete-word (arg)
-    (interactive "p")
-    (delete-region
-     (point)
-     (progn
-       (backward-word arg)
-       (point))))
-  (defun forward-delete-char (arg)
-    "Delete end of line smarter."
-    (interactive "p")
-    (if (eq (following-char) 10)
-        (delete-indentation 1)
-      (delete-char 1)))
-  (defun forward-to-symbol (arg)
-    (interactive "^p")
-    (let ((cnt arg)
-          (p (point)))
-      (if (natnump cnt)
-          (re-search-forward
-           "\\(\\sw\\|\\s_\\)+"
-           nil
-           'move
-           cnt)
-        (while (< cnt 0)
-          (if (re-search-backward
-               "\\(\\sw\\|\\s_\\)+"
-               nil
-               'move)
-              (skip-syntax-backward "w_"))
-          (setq cnt (1+ cnt))))
-      (if (eq (match-beginning 0) p)
-          (re-search-forward
-           "\\(\\sw\\|\\s_\\)+"
-           nil
-           'move
-           cnt))
-      (if (natnump arg)
-          (goto-char (match-beginning 0)))))
-  (defun backward-to-symbol (arg)
-    (interactive "^p")
-    (forward-to-symbol (- arg)))
+  :init
   ;; emacs 28.1から入る予定？
   (defun isearch-forward-thing-at-point ()
     "Do incremental search forward for the \"thing\" found near point.
@@ -2394,14 +2357,6 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
 (leaf
   crowi
   :el-get hirocarma/emacs-crowi)
-
-(leaf
-  utils
-  :el-get fujimotok/emacs-utils
-  :config (when (and (eq system-type 'gnu/linux)
-                     (file-exists-p
-                      "/proc/sys/fs/binfmt_misc/WSLInterop"))
-            (battery-wsl-init)))
 
 (leaf
   go-mode
