@@ -3,16 +3,17 @@
 ;;; Commentary:
 ;;; Code:
 
-(setq custom-file
-      (locate-user-emacs-file
-       "custom.el"))
-(when (file-exists-p custom-file)
-  (load custom-file))
+(prog1
+    "custom file setting and loading"
+  (setq custom-file
+        (locate-user-emacs-file
+         "custom.el"))
+  (when (file-exists-p custom-file)
+    (load custom-file)))
 
 ;; when use proxy, eval sexp. set "http" "https".
 ;; (customize-variable 'url-proxy-services)
 
-;; leafのロード
 (prog1
     "prepare leaf"
   (prog1
@@ -146,9 +147,8 @@ active region is added to the search string."
          ((kbd "C-z") . undo))
   :custom `((scroll-preserve-screen-position . t)
             (ring-bell-function . 'ignore))
-  :config
-  (set-default-coding-systems
-   'utf-8-unix)
+  :config (set-default-coding-systems
+           'utf-8-unix)
   (setq-default
    indent-tabs-mode
    nil)
@@ -177,6 +177,13 @@ active region is added to the search string."
   (setq-default
    left-fringe-width
    20)
+  (set-frame-font
+   "ricty diminished-10.5")
+  (set-face-attribute
+   'fringe
+   nil
+   :background "#2a2c38"
+   :foreground "#888882")
   ;; 画面分割の閾値 画面サイズが変わると更新 縦は分割させない 横は画面幅を分割閾値とすることで2分割までに制限
   (defun set-split-threshold-when-frame-size-changed (frame)
     (when (or (/= (window-pixel-width-before-size-change
@@ -202,13 +209,6 @@ active region is added to the search string."
   doom-themes
   :ensure t
   :config (load-theme 'doom-dracula t))
-(set-frame-font
- "ricty diminished-10.5")
-(set-face-attribute
- 'fringe
- nil
- :background "#2a2c38"
- :foreground "#888882")
 
 (leaf
   *mode-line
@@ -634,7 +634,6 @@ mouse-1: Display Line and Column Mode Menu"
     :hook ((company-box-mode-hook . company-quickhelp-mode))
     :custom ((company-quickhelp-delay . 1)))
   (global-company-mode))
-
 
 (leaf
   migemo
@@ -1536,7 +1535,6 @@ This is done by modifying the contents of `RESULT' in place."
           (counsel-gtags-find-file
            (concat prefix target)))))))
 
-
 (leaf
   lsp-mode
   :ensure t
@@ -1675,7 +1673,6 @@ This is done by modifying the contents of `RESULT' in place."
                               (pyvenv-mode 1)
                               (pyvenv-activate "venv"))))
 
-
 (leaf
   vue-mode
   :ensure t
@@ -1749,7 +1746,6 @@ This is done by modifying the contents of `RESULT' in place."
 (when (not (eq system-type 'windows-nt)) 
   (exec-path-from-shell-initialize))
 
-
 ;; wsl fullscreen
 (when (and (eq system-type 'gnu/linux)
            (file-exists-p
@@ -1796,9 +1792,6 @@ You can customize these variables for your enviroment.
   (advice-add
    'toggle-frame-maximized
    :around 'toggle-frame-maximized-advice))
-
-;; battery.el for wsl
-
 
 (leaf
   *which-func
@@ -1909,7 +1902,6 @@ You can customize these variables for your enviroment.
           " "
           battery-mode-line-string)))
 
-
 (leaf
   nxml-mode
   :mode "\\.xaml\\'"
@@ -1967,7 +1959,6 @@ You can customize these variables for your enviroment.
      nil)
    nil
    'eq))
-
 
 (leaf
   *ivy
@@ -2135,7 +2126,6 @@ You can customize these variables for your enviroment.
     "Search TKK."
     (list 430675 2721866130)))
 
-
 (leaf
   org
   :bind ((org-mode-map
@@ -2144,6 +2134,7 @@ You can customize these variables for your enviroment.
   :config (org-babel-do-load-languages
            'org-babel-load-languages
            '((plantuml . t))))
+
 (leaf
   eww
   :disabled t
