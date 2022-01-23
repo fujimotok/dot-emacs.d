@@ -2572,36 +2572,9 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   crowi
   :el-get hirocarma/emacs-crowi)
 
-(defun color-hex2rgba (hex)
-  "rrggbbaa -> r(0-255), g(0-255), b(0-255), a(0.0-1.0)"
-  (interactive "scolor code (#rrggbbaa): #")
-  (let* ((conv (lambda (s e)
-                 (string-to-number
-                  (substring hex s e)
-                  16)))
-         (r (funcall conv 0 2))
-         (g (funcall conv 2 4))
-         (b (funcall conv 4 6))
-         (a (/ (funcall conv 6 8) 255.0)))
-    (format
-     "rgba(%d, %d, %d, %.2f)"
-     r
-     g
-     b
-     a)))
-
-(defun color-rgba2hex (r g b a)
-  "r(0-255), g(0-255), b(0-255), a(0.0-1.0) -> rrggbbaa"
-  (interactive "nr(0-255): 
-ng(0-255): 
-nb(0-255): 
-na(0.0-1.0): ")
-  (format
-   "#%02X%02X%02X%02X"
-   r
-   g
-   b
-   (* a 255)))
+(leaf
+  utils
+  :el-get fujimotok/emacs-utils)
 
 (leaf
   go-mode
@@ -2621,87 +2594,6 @@ na(0.0-1.0): ")
               (generate-new-buffer-name
                "*shell*")))
   :advice (:around shell shell-advice))
-
-
-(defun timetable (s e)
-  "update timetable formated 'HH:MM MM Title' in region
-before
-13:00 [10] opening
-13:00 [20] presentation
-13:00 [10] ending
-
-after
-13:00 [10] opening
-13:10 [20] presentation
-13:30 [10] ending
-13:40
-"
-  (interactive "r")
-  (let ((region-string (buffer-substring-no-properties
-                        s
-                        e))
-        tree
-        before-elem
-        result
-        hour
-        min
-        period)
-    ;; 行とスペース区切りの列に分割
-    (setq tree
-          (mapcar
-           (lambda (string)
-             (split-string string " "))
-           (split-string
-            region-string
-            "\n")))
-    ;; 前の要素を参照するためmap使えない
-    (while tree
-      ;; 現在の行の処理をきめて保持
-      (setq before-elem
-            (if (not (nth 1 before-elem))
-                (car tree)
-              ;; 前の行がなければ、今の行をそのまま記憶
-              ;; 前の行の時間と期間から、今の行の時間を求めて記憶
-              (setq hour
-                    (string-to-number
-                     (nth 0 (split-string
-                             (nth 0 before-elem)
-                             ":"))))
-              (setq min
-                    (string-to-number
-                     (nth 1 (split-string
-                             (nth 0 before-elem)
-                             ":"))))
-              (setq period
-                    (string-to-number
-                     (replace-regexp-in-string
-                      "[^0-9]"
-                      ""
-                      (nth 1 before-elem))))
-              (setq hour
-                    (mod
-                     (+ hour (/ (+ min period) 60))
-                     24))
-              (setq min
-                    (mod (+ min period) 60))
-              (append
-               (list
-                (format "%02d:%02d" hour min))
-               (cdr (car tree)))))
-      ;; 変更後の結果を保持
-      (setq result
-            (append
-             result
-             (list before-elem)))
-      ;; treeを1行進める
-      (setq tree (cdr tree)))
-    (delete-region s e)
-    (mapcar
-     (lambda (list)
-       (insert
-        (mapconcat #'identity list " "))
-       (newline))
-     result)))
 
 (leaf
   tr-ime
