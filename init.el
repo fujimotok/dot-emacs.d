@@ -4,15 +4,21 @@
 ;;; Code:
 
 (prog1
-    "custom file setting and loading"
+    "custom file setting to load aborting"
   (setq custom-file
         (locate-user-emacs-file
-         "custom.el"))
-  (when (file-exists-p custom-file)
-    (load custom-file)))
+         "custom.el")))
 
-;; when use proxy, eval sexp. set "http" "https".
-;; (customize-variable 'url-proxy-services)
+(prog1
+    "proxy setting"
+;; when use proxy, add to ~/.emacs.d/local-custom/proxy.el
+;; (setq url-proxy-services
+;;       '(("http" . "proxy.example.com:8080")
+;;         ("https" . "proxy.example.com:8080")))
+  (push
+   "~/.emacs.d/local-custom"
+   load-path)
+  (load "proxy" t))
 
 (prog1
     "prepare leaf"
