@@ -1643,15 +1643,26 @@ This is done by modifying the contents of `RESULT' in place."
 
 (leaf
   vue-mode
+  :doc "TODO: revert buffer しないと補完が効かない"
   :ensure t
   :mode (("\\.vue\\'" . vue-mode))
-  :hook ((vue-mode-hook . auto-format-vue)
-         (vue-mode-hook . flycheck-mode)
-         (vue-mode-hook . tern-mode)
-         (vue-mode-hook . set-company-backend-js-mode)
-         (vue-mode-hook . sgml-electric-tag-pair-mode))
+  :hook ((vue-mode-hook . lsp))
   :custom ((js-indent-level . 2))
-  :config)
+  :config (defun eslint-fix-file ()
+            (interactive)
+            (message
+             "eslint --fix %s"
+             (buffer-name))
+            (call-process
+             "eslint"
+             nil
+             nil
+             nil
+             "--fix"
+             (buffer-file-name))
+            (message
+             "eslint --fix complete")
+            (revert-buffer t t nil)))
 
 (leaf
   add-node-modules-path
@@ -2296,36 +2307,6 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
     (advice-add
      command
      :after #'pulse-line)))
-
-(defun set-frame-alpha (a)
-  (interactive "nset alpha[0-100]: ")
-  (set-frame-parameter
-   nil
-   'alpha
-   a))
-
-(defun auto-format-vue ()
-  (add-hook
-   'after-save-hook
-   'eslint-fix-file
-   nil
-   'local))
-
-(defun eslint-fix-file ()
-  (interactive)
-  (message
-   "eslint --fix %s"
-   (buffer-name))
-  (call-process
-   "eslint"
-   nil
-   nil
-   nil
-   "--fix"
-   (buffer-file-name))
-  (message
-   "eslint --fix complete")
-  (revert-buffer t t nil))
 
 (leaf
   *gud-mode
