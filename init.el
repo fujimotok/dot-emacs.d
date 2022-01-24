@@ -41,14 +41,13 @@
     (leaf
       leaf-keywords
       :ensure t
-      :config (leaf-keywords-init))))
+      :config (leaf el-get :ensure t)
+      (leaf-keywords-init))))
 
 (leaf
   leaf
   :config ;;leafのデバッグ用パッケージ
   (leaf leaf-convert :ensure t))
-
-(leaf el-get :ensure t)
 
 (leaf
   utils
@@ -1706,7 +1705,7 @@ This is done by modifying the contents of `RESULT' in place."
      (outline-hide-sublevels 1))))
 
 ;; shellの環境設定
-(when (not (eq system-type 'windows-nt)) 
+(when (not (eq system-type 'windows-nt))
   (exec-path-from-shell-initialize))
 
 ;; wsl fullscreen
@@ -2389,3 +2388,5 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
            :override (lambda ()))
   (tr-ime-standard-install)
   (w32-ime-initialize))
+
+;;; init.el ends here
