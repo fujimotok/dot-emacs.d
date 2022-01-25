@@ -1515,7 +1515,8 @@ This is done by modifying the contents of `RESULT' in place."
    (lsp-auto-guess-root . nil)
    ;;(lsp-document-sync-method . 'incremental) ;; always send incremental document
    (lsp-document-sync-method . 2)
-   (lsp-response-timeout . 5))
+   (lsp-response-timeout . 5)
+   (read-process-output-max . 10485760))
   :bind ((lsp-mode-map
           ("C-c C-r" . lsp-rename)))
   :config ;; if you are adding the support for your language server in separate repo use
