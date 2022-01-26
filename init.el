@@ -1679,9 +1679,13 @@ This is done by modifying the contents of `RESULT' in place."
    (lambda nil
      (outline-hide-sublevels 1))))
 
-;; shellの環境設定
-(when (not (eq system-type 'windows-nt))
-  (exec-path-from-shell-initialize))
+(leaf exec-path-from-shell
+  :doc "MacOS環境でshell以外から起動したときにpathが引き継がれない問題の対策パッケージ"
+  :if (memq
+       window-system
+       '(mac ns x))
+  :ensure t
+  :config (exec-path-from-shell-initialize))
 
 ;; wsl fullscreen
 (when (and (eq system-type 'gnu/linux)
