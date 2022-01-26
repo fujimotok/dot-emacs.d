@@ -1805,41 +1805,44 @@ You can customize these variables for your enviroment.
     :lighter "window-t")
   (window-t-minor-mode 1))
 
-;; タイトルバーに時計
-(when (window-system)
-  ;; display-timeより先にsetしておかないとdefaultの書式になる
-  (setq display-time-string-forms
-        '((format
-           "%s/%s/%s"
-           year
-           month
-           day)
-          (format
-           "(%s:%s)"
-           24-hours
-           minutes)))
-  (display-time)
-  ;; display-time-stringの有効化
-  (display-battery-mode 1)
-  (setq battery-mode-line-format
-        " %b%p%%")
-  (with-eval-after-load
-      'doom-modeline
-    ;; doom-modelineがbattery-mode-line-stringを更新させなくするのでremove
-    (advice-remove
-     'battery-update
-     'doom-modeline-update-battery-status))
-  ;; バッファがファイルのときはフルパス、でなければバッファ名表示
-  ;; if(buffer-file-name) の評価がsetq時で終わらないよう:eval
-  (setq frame-title-format
-        '(""
-          (:eval (if (buffer-file-name)
-                     " %f"
-                   " %b"))
-          " --- "
-          display-time-string
-          " "
-          battery-mode-line-string)))
+
+
+(leaf *titlebar
+  :doc "タイトルバーに時計などを表示"
+  :config (when (window-system)
+            ;; display-timeより先にsetしておかないとdefaultの書式になる
+            (setq display-time-string-forms
+                  '((format
+                     "%s/%s/%s"
+                     year
+                     month
+                     day)
+                    (format
+                     "(%s:%s)"
+                     24-hours
+                     minutes)))
+            (display-time)
+            ;; display-time-stringの有効化
+            (display-battery-mode 1)
+            (setq battery-mode-line-format
+                  " %b%p%%")
+            (with-eval-after-load
+                'doom-modeline
+              ;; doom-modelineがbattery-mode-line-stringを更新させなくするのでremove
+              (advice-remove
+               'battery-update
+               'doom-modeline-update-battery-status))
+            ;; バッファがファイルのときはフルパス、でなければバッファ名表示
+            ;; if(buffer-file-name) の評価がsetq時で終わらないよう:eval
+            (setq frame-title-format
+                  '(""
+                    (:eval (if (buffer-file-name)
+                               " %f"
+                             " %b"))
+                    " --- "
+                    display-time-string
+                    " "
+                    battery-mode-line-string))))
 
 (leaf nxml-mode
   :mode "\\.xaml\\'"
