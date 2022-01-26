@@ -759,15 +759,10 @@ mouse-1: Display Line and Column Mode Menu"
          (company-dabbrev-char-regexp . "[A-Za-z_][[:alnum:]_]*"))
   :hook ((emacs-lisp-mode-hook . set-company-backend-lisp-mode)
          (omnisharp-mode-hook . set-company-backend-omnisharp-mode)
-         ;;(shell-mode-hook . set-company-backend-shell-mode)
+         (shell-mode-hook . set-company-backend-shell-mode)
          ;; lsp-modeがbackendsを書き換えるので、書き換え後をhookして元に戻す
          (lsp-after-initialize-hook . set-company-backend-lsp-mode))
-  :config ;; (set-face-attribute 'company-tooltip nil :foreground "#36c6b0" :background "#244f36")
-  ;; (set-face-attribute 'company-tooltip-common nil :foreground "white" :background "#244f36")
-  ;; (set-face-attribute 'company-tooltip-selection nil :foreground "#a1ffcd" :background "#007771")
-  ;; (set-face-attribute 'company-tooltip-common-selection nil :foreground "white" :background "#007771")
-  ;; (set-face-attribute 'company-scrollbar-fg nil :background "#4cd0c1")
-  ;; (set-face-attribute 'company-scrollbar-bg nil :background "#002b37")
+  :config
   (with-eval-after-load
       'company
     ;; リストに直接置くと左から優先度して最初のbackendのみ使う。リストの要素にリスト渡すとグループと呼び、backendが同時に機能する。
@@ -778,44 +773,32 @@ mouse-1: Display Line and Column Mode Menu"
              company-capf
              company-keywords))))
   (defun set-company-backend-lisp-mode ()
-    (add-to-list
-     (make-local-variable
-      'company-backends)
-     'company-elisp))
+    (setq-local
+     company-backends
+     '((company-elisp))))
   (defun set-company-backend-omnisharp-mode ()
-    (add-to-list
-     (make-local-variable
-      'company-backends)
-     'company-omnisharp))
+    (setq-local
+     company-backends
+     '((company-omnisharp
+        company-dabbrev-code
+        company-dabbrev
+        company-files
+        company-keywords))))
   (defun set-company-backend-lsp-mode ()
     (setq-local
      company-backends
-     '((company-dabbrev-code
+     '((company-capf
+        company-dabbrev-code
         company-dabbrev
         company-files
-        company-capf
         company-keywords))))
-  (defun set-company-backend-js-mode ()
-    (make-local-variable
-     'company-backends)
-    (add-to-list
-     'company-backends
-     'company-tern)
-    (add-to-list
-     'company-backends
-     'company-web-html))
   (defun set-company-backend-shell-mode ()
-    (set
-     (make-local-variable
-      'company-backends)
-     '(company-capf)))
-  (leaf
-    company-tern
-    :el-get kevinushey/company-tern)
-  (leaf tern :ensure t)
+    (setq-local
+     company-backends
+     '((company-capf
+        company-files))))
   (leaf company-web :ensure t)
-  (leaf
-    company-box
+  (leaf company-box
     :ensure t
     :custom ((company-box-scrollbar . nil))
     :hook ((company-mode-hook . company-box-mode))
@@ -854,8 +837,7 @@ mouse-1: Display Line and Column Mode Menu"
       (add-to-list
        'company-box-icons-functions
        'company-box-icons--omnisharp)))
-  (leaf
-    company-quickhelp
+  (leaf company-quickhelp
     :ensure t
     :hook ((company-box-mode-hook . company-quickhelp-mode))
     :custom ((company-quickhelp-delay . 1)))
