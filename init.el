@@ -3,6 +3,7 @@
 ;;; Commentary:
 ;;; Code:
 
+;;; Prepare configuration management package
 (prog1
     "custom file setting to load aborting"
   (setq custom-file
@@ -50,6 +51,7 @@
       :config (leaf el-get :ensure t)
       (leaf-keywords-init))))
 
+;;; Basic settings
 (leaf utils
   :doc "自作関数"
   :el-get fujimotok/emacs-utils
@@ -167,6 +169,94 @@ active region is added to the search string."
    'prog-mode-hook
    #'hs-minor-mode))
 
+(leaf *window-t
+  :doc "window切替関数の定義とkey-mapの設定"
+  :config (defun other-window-or-split ()
+            (interactive)
+            (when (one-window-p)
+              (split-window-horizontally)
+              (pop-to-buffer nil))
+            (unless (window-minibuffer-p nil)
+              (other-window 1)))
+  ;; global-set-keyではほかのモードで上書きされてしまう ex)dired-mode
+  (defvar window-t-minor-mode-map (let ((map (make-sparse-keymap)))
+                                    (define-key map (kbd "C-t")
+                                      'other-window-or-split)
+                                    map)
+    "window-t-minor-mode keymap.")
+  (define-minor-mode window-t-minor-mode
+    "A minor mode that window-t key settings override annoying major modes."
+    :init-value t
+    :lighter "window-t")
+  (window-t-minor-mode 1))
+
+;;; System depended settings
+(leaf *windows-nt
+  :doc "Windows環境のみの設定"
+  :if (eq system-type 'windows-nt)
+  :config ;; win環境でsvnがsjisで吐くのでbufferも追従するように与える
+  (add-to-list
+   'process-coding-system-alist
+   '("[sS][vV][nN]" . sjis-dos))
+  (add-to-list
+   'process-coding-system-alist
+   '("python" . sjis-dos))
+  (add-hook
+   'shell-mode-hook
+   (lambda ()
+     (set-buffer-process-coding-system
+      'sjis-dos
+      'sjis-dos))))
+
+(leaf tr-ime
+  :doc "NTEmacsでIMEの自動ON/OFFするためのパッケージ"
+  :if (eq system-type 'windows-nt)
+  :ensure t
+  :custom ((default-input-method . "W32-IME")
+           (w32-ime-mode-line-state-indicator . "Ａ")
+           (w32-ime-mode-line-state-indicator-list . '("-" "あ" "Ａ")))
+  :config (advice-add
+           'w32-ime-init-mode-line-display
+           :override (lambda ()))
+  (tr-ime-standard-install)
+  (w32-ime-initialize))
+
+(leaf exec-path-from-shell
+  :doc "MacOS環境でshell以外から起動したときにpathが引き継がれない問題の対策パッケージ"
+  :if (memq
+       window-system
+       '(mac ns x))
+  :ensure t
+  :config (exec-path-from-shell-initialize))
+
+(leaf mozc
+  :doc "mozcの設定 Linux環境のみ"
+  :config (when (and (eq system-type 'gnu/linux)
+                     (file-exists-p
+                      "/proc/sys/fs/binfmt_misc/WSLInterop"))
+            (setq default-input-method
+                  "japanese-mozc")
+            (setq mozc-leim-title "あ")
+            (global-set-key
+             (kbd "<zenkaku-hankaku>")
+             'toggle-input-method)
+            (require 'mozc-popup)
+            (setq mozc-candidate-style
+                  'popup)
+            (set-face-background
+             'mozc-cand-overlay-description-face
+             "steel blue")
+            (set-face-background
+             'mozc-cand-overlay-even-face
+             "steel blue")
+            (set-face-background
+             'mozc-cand-overlay-odd-face
+             "steel blue")
+            (set-face-background
+             'mozc-cand-overlay-footer-face
+             "steel blue")))
+
+;;; Appearance settings
 (leaf doom-themes
   :doc "doomテーマのロード"
   :ensure t
@@ -427,22 +517,42 @@ mouse-1: Display Line and Column Mode Menu"
           my/parrot)))
     (doom-modeline-mode t)))
 
-(leaf lispy
-  :doc "lisp編集時の移動を楽にするパッケージ"
-  :ensure t
-  :hook ((emacs-lisp-mode-hook . lispy-mode)))
-
-(leaf hideshow
-  :doc "折り畳み機能のパッケージ"
-  :ensure t
-  :hook ((c-mode-common-hook . hs-minor-mode)
-         (emacs-lisp-mode-hook . hs-minor-mode)
-         (java-mode-hook . hs-minor-mode)
-         (lisp-mode-hook . hs-minor-mode)
-         (parl-mode-hook . hs-minor-mode)
-         (sh-mode-hook . hs-minor-mode))
-  :bind ((hs-minor-mode-map
-          ("C-i" . hs-toggle-hiding))))
+(leaf *titlebar
+  :doc "タイトルバーに時計などを表示"
+  :config (when (window-system)
+            ;; display-timeより先にsetしておかないとdefaultの書式になる
+            (setq display-time-string-forms
+                  '((format
+                     "%s/%s/%s"
+                     year
+                     month
+                     day)
+                    (format
+                     "(%s:%s)"
+                     24-hours
+                     minutes)))
+            (display-time)
+            ;; display-time-stringの有効化
+            (display-battery-mode 1)
+            (setq battery-mode-line-format
+                  " %b%p%%")
+            (with-eval-after-load
+                'doom-modeline
+              ;; doom-modelineがbattery-mode-line-stringを更新させなくするのでremove
+              (advice-remove
+               'battery-update
+               'doom-modeline-update-battery-status))
+            ;; バッファがファイルのときはフルパス、でなければバッファ名表示
+            ;; if(buffer-file-name) の評価がsetq時で終わらないよう:eval
+            (setq frame-title-format
+                  '(""
+                    (:eval (if (buffer-file-name)
+                               " %f"
+                             " %b"))
+                    " --- "
+                    display-time-string
+                    " "
+                    battery-mode-line-string))))
 
 (leaf rainbow-delimiters
   :doc "カッコに色をつけるパッケージ"
@@ -463,15 +573,169 @@ mouse-1: Display Line and Column Mode Menu"
   (global-rainbow-delimiters-mode
    t))
 
-(leaf ssh
-  :doc "sshでshellを実行するためのパッケージ"
-  :ensure t
-  :custom ((ssh-directory-tracking-mode . t)
-           (dirtrackp .nil))
-  :config (with-eval-after-load
-              'ssh
-            (shell-dirtrack-mode t)))
+(leaf *pulse-line
+  :doc "windowを切り替えた時などに現在の行をハイライトする"
+  :custom ((pulse-iterations . 1))
+  :config (defun pulse-line (&rest _)
+            "Pulse the current line."
+            (pulse-momentary-highlight-one-line
+             (point)))
+  (dolist (command
+           '(scroll-up-command
+             scroll-down-command
+             recenter-top-bottom
+             other-window))
+    (advice-add
+     command
+     :after #'pulse-line)))
 
+(leaf *which-func
+  :doc "関数名表示 lsp-modeでは使わない"
+  :config (which-function-mode)
+  (setq which-func-header-line-format
+        '(which-func-mode
+          ("" which-func-format)))
+  (defadvice which-func-ff-hook (after header-line activate)
+    (when (and which-func-mode
+               (not (bound-and-true-p lsp-mode)))
+      (setq header-line-format
+            which-func-header-line-format)))
+  (defun show-file-name ()
+    (interactive)
+    (kill-new (buffer-file-name))
+    (message
+     "add kill ring: %s"
+     (buffer-file-name)))
+  (defun show-func-name ()
+    (interactive)
+    (kill-new (buffer-file-name))
+    (message
+     "add kill ring: %s"
+     (which-function))))
+
+(leaf *ivy
+  :doc "emacsコマンド補完パッケージ"
+  :config (leaf
+            ivy
+            :ensure t
+            :bind ((ivy-minibuffer-map
+                    ("<escape>" . minibuffer-keyboard-quit)))
+            :custom ((ivy-use-virtual-buffers . t)
+                     (ivy-tab-space . t)
+                     (ivy-height-alist . '((t
+                                            lambda (_caller)
+                                            (/ (frame-height) 3)))))
+            :config (when (setq enable-recursive-minibuffers
+                                t)
+                      (minibuffer-depth-indicate-mode
+                       1))
+            (setcdr
+             (assq t
+                   ivy-format-functions-alist)
+             #'ivy-format-function-line)
+            (ivy-mode 1))
+  (leaf ivy-hydra :ensure t)
+  (leaf
+    counsel
+    :ensure t
+    :init (defun ivy-with-thing-at-point (cmd)
+            (let ((ivy-initial-inputs-alist (list
+                                             (cons cmd
+                                                   (thing-at-point 'symbol)))))
+              (funcall cmd)))
+    (defun counsel-rg-thing-at-point ()
+      (interactive)
+      (ivy-with-thing-at-point
+       'counsel-rg))
+    ;; directory を指定して ag やり直し．クエリは再利用する
+    (defun my-counsel-rg-in-dir (_arg)
+      "Search again with new root directory."
+      (let ((current-prefix-arg '(4)))
+        (counsel-rg ivy-text nil "")))
+    ;; also disable extra-ag-args
+    (defun counsel-bookmark-thing-at-point ()
+      (interactive)
+      (let ((ivy-initial-inputs-alist (list
+                                       (cons 'counsel-bookmark
+                                             (format
+                                              "%s:%d\t::%s\t::%s"
+                                              (buffer-name)
+                                              (line-number-at-pos)
+                                              (which-function)
+                                              (thing-at-point 'line))))))
+        (counsel-bookmark)))
+    (defun counsel-up-directory-or-delete ()
+      (interactive)
+      (if ivy--directory
+          (counsel-up-directory)
+        (ivy-kill-line)))
+    (defun my-ivy--directory-enter (&optional arg)
+      (interactive "p")
+      (ivy-insert-current)
+      (let (dir)
+        (if (and (> ivy--length 0)
+                 (not (string=
+                       (ivy-state-current ivy-last)
+                       "./"))
+                 (setq dir
+                       (ivy-expand-file-if-directory
+                        (ivy-state-current ivy-last))))
+            (progn
+              (ivy--cd dir)
+              (ivy--exhibit))
+          (ivy-insert-current))))
+    :bind (("M-x" . counsel-M-x)
+           ;;("C-M-z" . counsel-fzf)
+           ("C-M-r" . counsel-recentf)
+           ;;("C-x C-b" . counsel-ibuffer)
+           ("C-c i" . counsel-imenu)
+           ("C-x b" . ivy-switch-buffer)
+           ("C-M-f" . counsel-rg-thing-at-point)
+           ("M-y" . counsel-yank-pop)
+           ("C-x C-f" . counsel-find-file)
+           ("C-x C-b" . counsel-bookmark-thing-at-point)
+           (ivy-minibuffer-map
+            ("C-l" . counsel-up-directory-or-delete))
+           (ivy-minibuffer-map
+            ("<tab>" . my-ivy--directory-enter))
+           (counsel-find-file-map
+            ("C-l" . counsel-up-directory))
+           (counsel-find-file-map
+            ("<tab>" . my-ivy--directory-enter)))
+    :setq ((ivy-on-del-error-function
+            function
+            ignore)
+           (ivy-initial-inputs-alist . nil))
+    :config (setq counsel-find-file-ignore-regexp
+                  (regexp-opt '("./" "../")))
+    (ivy-add-actions
+     'counsel-rg
+     '(("r"
+        my-counsel-rg-in-dir
+        "search in directory")))
+    (counsel-mode 1))
+  (leaf
+    swiper
+    :ensure t
+    :bind (("M-s s" . swiper-thing-at-point)
+           (isearch-mode-map
+            ("C-i" . swiper-from-isearch))))
+  (leaf
+    ivy-rich
+    :ensure t
+    :config (ivy-rich-mode 1))
+  (leaf
+    all-the-icons-ivy
+    :ensure t
+    :config (all-the-icons-ivy-setup)
+    (dolist (command
+             '(counsel-projectile-switch-project
+               counsel-ibuffer))
+      (add-to-list
+       'all-the-icons-ivy-buffer-commands
+       command))))
+
+;;; Programming langages settings
 (leaf company
   :doc "補完機能パッケージ"
   :ensure t
@@ -597,169 +861,155 @@ mouse-1: Display Line and Column Mode Menu"
     :custom ((company-quickhelp-delay . 1)))
   (global-company-mode))
 
-(leaf migemo
-  :doc "検索の際に日本語をローマ字読みでヒットさせるパッケージ"
+(leaf lsp-mode
   :ensure t
-  :custom ((migemo-command . "cmigemo")
-           (migemo-options . '("-q" "--emacs" "-i" "\a"))
-           (migemo-user-dictionary . nil)
-           (migemo-regex-dictionary . nil)
-           (migemo-use-pattern-alist . t)
-           (migemo-use-frequent-pattern-alist . t)
-           (migemo-pattern-alist-length . 1000)
-           (migemo-coding-system . 'utf-8-unix))
-  :config (setq migemo-dictionary
-                (expand-file-name
-                 "~/.emacs.d/lib/dict/utf-8/migemo-dict"))
-  (load-library "migemo")
-  (migemo-init))
+  :custom ;; debug
+  ((lsp-print-io . t)
+   (lsp-trace . t)
+   (lsp-print-performance . t)
+   (lsp-enable-snippet . nil)
+   ;; general
+   (lsp-auto-guess-root . nil)
+   ;;(lsp-document-sync-method . 'incremental) ;; always send incremental document
+   (lsp-document-sync-method . 2)
+   (lsp-response-timeout . 5)
+   (read-process-output-max . 10485760))
+  :bind ((lsp-mode-map
+          ("C-c C-r" . lsp-rename)))
+  :config ;; if you are adding the support for your language server in separate repo use
+  ;; (add-to-list 'lsp-language-id-configuration '(python-mode . "python"))
+  ;; (lsp-register-client
+  ;;  (make-lsp-client :new-connection (lsp-stdio-connection "pyright")
+  ;;                   :major-modes '(python-mode)
+  ;;                   :server-id 'pyright))
+  ;; (add-to-list 'lsp-language-id-configuration '(csharp-mode . "csharp"))
+  ;;  (lsp-register-client
+  ;;   (make-lsp-client :new-connection (lsp-stdio-connection '(".cache/lsp/omnisharp-roslyn/v1.37.0/OmniSharp.exe" "-lsp"))
+  ;;                    :major-modes '(csharp-mode)
+  ;;                    :server-id 'omnisharp))
+  (add-to-list
+   'lsp-language-id-configuration
+   '(web-mode . "web"))
+  (lsp-register-client
+   (make-lsp-client
+    :new-connection (lsp-stdio-connection '("vls"))
+    :major-modes '(web-mode)
+    :server-id 'vls))
+  ;; パンくずリスト。hookでdisableされるのを防ぐ
+  (lsp-headerline-breadcrumb-mode
+   1)
+  (remove-hook
+   'lsp-unconfigure-hook
+   #'lsp-headerline--disable-breadcrumb
+   t)
+  ;; LSP UI tools
+  (leaf
+    lsp-ui
+    :ensure t
+    :custom ;; lsp-ui-doc
+    ((lsp-ui-doc-enable . nil)
+     (lsp-ui-doc-header . t)
+     (lsp-ui-doc-include-signature . t)
+     (lsp-ui-doc-position . 'at-point)
+     ;; top, bottom, or at-point
+     (lsp-ui-doc-max-width . 100)
+     (lsp-ui-doc-max-height . 30)
+     (lsp-ui-doc-use-childframe . t)
+     (lsp-ui-doc-use-webkit . t)
+     ;; lsp-ui-flycheck
+     (lsp-ui-flycheck-enable . nil)
+     ;; lsp-ui-sideline
+     (lsp-ui-sideline-enable . nil)
+     (lsp-ui-sideline-ignore-duplicate . t)
+     (lsp-ui-sideline-show-symbol . nil)
+     (lsp-ui-sideline-show-hover . nil)
+     (lsp-ui-sideline-show-diagnostics . nil)
+     (lsp-ui-sideline-show-code-actions . nil)
+     ;; lsp-ui-imenu
+     (lsp-ui-imenu-enable . nil)
+     (lsp-ui-imenu-kind-position . 'top)
+     ;; lsp-ui-peek
+     (lsp-ui-peek-enable . t)
+     (lsp-ui-peek-peek-height . 20)
+     (lsp-ui-peek-list-width . 50)
+     (lsp-ui-peek-fontify . 'on-demand))
+    ;; never, on-demand, or always
+    :preface (defun lsp-ui-peek-find-definitions-or-pop ()
+               (interactive)
+               (if (bounds-of-thing-at-point
+                    'word)
+                   (lsp-ui-peek-find-definitions)
+                 (xref-pop-marker-stack)))
+    (defun lsp-ui-peek-find-references-or-pop ()
+      (interactive)
+      (if (bounds-of-thing-at-point
+           'word)
+          (lsp-ui-peek-find-references)
+        (xref-pop-marker-stack)))
+    :bind ((lsp-mode-map
+            ("C-j" . lsp-ui-peek-find-definitions-or-pop))
+           (lsp-mode-map
+            ("C-S-j" . lsp-ui-peek-find-references-or-pop))
+           (lsp-mode-map
+            ("C-h d" . lsp-ui-doc-show))
+           (lsp-mode-map
+            ("C-h a" . lsp-execute-code-action)))
+    :hook ((lsp-mode-hook . lsp-ui-mode)
+           (lsp-mode-hook . lsp-completion-mode))))
 
-(leaf ripgrep
-  :doc "Grepの改良版 ripgrepのemacsクライアントパッケージ"
+(leaf flycheck
+  :custom ((flycheck-check-syntax-automatically . '(mode-enabled save))
+           (flycheck-idle-change-delay . 2)))
+
+(leaf eldoc
+  :hook ((emacs-lisp-mode-hook . turn-on-eldoc-mode))
+  :preface (defun my:shutup-eldoc-message (f &optional string)
+             (unless (active-minibuffer-window)
+               (funcall f string)))
+  :advice (:around eldoc-message
+                   my:shutup-eldoc-message))
+
+(leaf lispy
+  :doc "lisp編集時の移動を楽にするパッケージ"
   :ensure t
-  :custom ((ripgrep-executable . "rg")
-           (ripgrep-arguments . '("-S"))))
+  :hook ((emacs-lisp-mode-hook . lispy-mode)))
 
-(leaf *windows-nt
-  :doc "Windows環境のみの設定"
-  :if (eq system-type 'windows-nt)
-  :config ;; win環境でsvnがsjisで吐くのでbufferも追従するように与える
-  (add-to-list
-   'process-coding-system-alist
-   '("[sS][vV][nN]" . sjis-dos))
-  (add-to-list
-   'process-coding-system-alist
-   '("python" . sjis-dos))
+(leaf *markdown
+  :doc "markdown用設定"
+  :custom ((markdown-fontify-code-blocks-natively . t))
+  :config (defun markdown-insert-image-from-clipboard ()
+            (interactive)
+            (let ((filepath))
+              (if (eq 1
+                      (call-process-shell-command
+                       (format
+                        "%s %s %s"
+                        "powershell.exe"
+                        "-Command"
+                        "$clip = Get-Clipboard -Format Image; if ($null -eq $clip) {exit 1}")
+                       nil))
+                  (message
+                   "no image on a clipboard")
+                (setq filepath
+                      (read-file-name
+                       "Save file path: "))
+                (call-process-shell-command
+                 (format
+                  "%s %s %s'%s'%s"
+                  "powershell.exe"
+                  "-Command"
+                  "$clip = Get-Clipboard -Format Image; if ($null -ne $clip) { $clip.Save("
+                  filepath
+                  ") }")
+                 (insert
+                  (format
+                   "![](%s)"
+                   (file-relative-name filepath)))
+                 (markdown-display-inline-images)))))
   (add-hook
-   'shell-mode-hook
-   (lambda ()
-     (set-buffer-process-coding-system
-      'sjis-dos
-      'sjis-dos))))
-
-(leaf *dired
-  :doc "diredでファイルオープンやディレクトリ移動で新しいバッファ開かない設定など"
-  :config (leaf
-            all-the-icons-dired
-            :ensure t)
-  (leaf
-    *windows
-    :if (or (eq system-type 'windows-nt)
-            (and (eq system-type 'gnu/linux)
-                 (file-exists-p
-                  "/proc/sys/fs/binfmt_misc/WSLInterop")))
-    :config (defun dired-open-file ()
-              "In dired, open the file named on this line."
-              (interactive)
-              (let* ((file (if (eq system-type 'windows-nt)
-                               (dired-get-filename)
-                             (shell-command-to-string
-                              (concat
-                               "wslpath -w"
-                               " "
-                               (dired-get-filename)))))
-                     (open (if (eq system-type 'windows-nt)
-                               "start"
-                             "explorer.exe")))
-                (message "Opening %s..." file)
-                (shell-command
-                 (mapconcat
-                  #'shell-quote-argument
-                  (list open file)
-                  "
-"))
-                ;;(call-process "gnome-open" nil 0 nil file)
-                (message
-                 "Opening %s done"
-                 file)))
-    (add-hook
-     'dired-mode-hook
-     '(lambda
-        ()
-        (define-key dired-mode-map "\C-o"
-          'dired-open-file)
-        (define-key dired-mode-map "\C-l"
-          'dired-up-directory)
-        (all-the-icons-dired-mode))))
-  (leaf
-    *darwin
-    :if (eq system-type 'darwin)
-    :config (defun open-mac (path)
-              (start-process
-               "dired-open-mac"
-               nil
-               "open"
-               path))
-    (defun quicklook-file (path)
-      (interactive)
-      (defvar cur nil)
-      (defvar old nil)
-      (setq old cur)
-      (setq cur
-            (start-process
-             "ql-file"
-             nil
-             "qlmanage"
-             "-p"
-             path))
-      (when old (delete-process old)))
-    (defun my-dired-open ()
-      (interactive)
-      (let ((exts-ql '("jpeg" "jpg" "png" "gif"))
-            (exts-open '("avi" "mkv" "mp4" "pdf")))
-        (cond ((file-accessible-directory-p
-                (dired-get-file-for-visit))
-               (call-interactively
-                'dired-find-alternate-file))
-              ((member
-                (downcase
-                 (file-name-extension
-                  (dired-get-file-for-visit)))
-                exts-ql)
-               (funcall
-                'quicklook-file
-                (dired-get-file-for-visit)))
-              ((member
-                (downcase
-                 (file-name-extension
-                  (dired-get-file-for-visit)))
-                exts-open)
-               (funcall
-                'open-mac
-                (dired-get-file-for-visit)))
-              (t
-               (call-interactively
-                'dired-find-file-other-window)))))
-    (add-hook
-     'dired-mode-hook
-     '(lambda
-        ()
-        (define-key dired-mode-map "\C-o"
-          'my-dired-open))))
-  (leaf
-    *common
-    :config ;; dired-find-alternate-file の有効化
-    (put
-     'dired-find-alternate-file
-     'disabled
-     nil)
-    ;; ファイルなら別バッファで、ディレクトリなら同じバッファで開く
-    (defun dired-open-in-accordance-with-situation ()
-      (interactive)
-      (let ((file (dired-get-filename)))
-        (if (file-directory-p file)
-            (dired-find-alternate-file)
-          (dired-find-file))))
-    (add-hook
-     'dired-mode-hook
-     '(lambda
-        ()
-        ;; RET 標準の dired-find-file では dired バッファが複数作られるので
-        ;; dired-find-alternate-file を代わりに使う
-        (define-key dired-mode-map (kbd "RET")
-          'dired-open-in-accordance-with-situation)
-        (define-key dired-mode-map (kbd "a")
-          'dired-find-file)))))
+   'markdown-mode-hook
+   (lambda nil
+     (outline-hide-sublevels 1))))
 
 (leaf *csharp
   :doc "C#用設定"
@@ -1430,6 +1680,153 @@ This is done by modifying the contents of `RESULT' in place."
      :around 'omnisharp--do-server-start-advice))
   (leaf open-in-msvs :ensure t))
 
+(leaf nxml-mode
+  :doc "xml, xaml用設定"
+  :mode "\\.xaml\\'"
+  :bind ((nxml-mode-map
+          ("C-c C-o" . hs-toggle-hiding))
+         (nxml-mode-map
+          ("C-c C-l" . hs-hide-level))
+         (nxml-mode-map
+          ("C-c C-a" . hs-show-all)))
+  :mode (("\\.xaml\\'" . nxml-mode))
+  :config ;; エラー行にマークがつくようにadvice
+  (defun rng-mark-error-advice (message beg end)
+    (let ((overlays (overlays-in beg end))
+          (continue t))
+      (while (and overlays continue)
+        (let ((o (car overlays)))
+          (when (and (eq (overlay-get o 'category)
+                         'rng-error)
+                     (= (overlay-start o) beg)
+                     (= (overlay-end o) end))
+            (overlay-put
+             o
+             'before-string
+             (propertize
+              "!"
+              'display
+              (list
+               'left-fringe
+               'right-triangle)))
+            (setq continue nil)))
+        (setq overlays (cdr overlays)))))
+  (advice-add
+   'rng-mark-error
+   :after 'rng-mark-error-advice)
+  ;; エラー箇所に波下線を出すface設定
+  (set-face-attribute
+   'rng-error
+   nil
+   :underline '(:color "red" :style wave))
+  (setq nxml-slash-auto-complete-flag
+        t)
+  (add-hook
+   'nxml-mode-hook
+   '(lambda
+      nil
+      (hs-minor-mode 1)
+      (setq nxml-child-indent 4)))
+  (add-to-list
+   'hs-special-modes-alist
+   '(nxml-mode
+     "<!--\\|<[^/>]>\\|<[^/][^>]*[^/]>"
+     ""
+     "<!--"
+     nxml-forward-element
+     nil)
+   nil
+   'eq))
+
+(leaf vue-mode
+  :doc "vue用設定"
+  :ensure t
+  :mode (("\\.vue\\'" . vue-mode))
+  :hook ((vue-mode-hook . lsp))
+  :custom ((js-indent-level . 2))
+  :config (defun eslint-fix-file ()
+            (interactive)
+            (message
+             "eslint --fix %s"
+             (buffer-name))
+            (call-process
+             "eslint"
+             nil
+             nil
+             nil
+             "--fix"
+             (buffer-file-name))
+            (message
+             "eslint --fix complete")
+            (revert-buffer t t nil)))
+
+(leaf add-node-modules-path
+  :ensure t
+  :config (add-hook
+           'vue-mode-hook
+           #'add-node-modules-path))
+
+(leaf *python-mode
+  :doc "python用設定"
+  :hook (python-mode-hook . (lambda ()
+                              (lsp)
+                              (local-set-key
+                               (kbd "<f5>")
+                               'my-pdb)))
+  :preface (defun my-pdb ()
+             (interactive)
+             (pdb
+              (concat
+               "python -m pdb "
+               (buffer-file-name
+                (current-buffer))))))
+
+(leaf pyvenv
+  :ensure t
+  :hook (python-mode-hook . (lambda ()
+                              (pyvenv-mode 1)
+                              (pyvenv-activate "venv"))))
+
+(leaf go-mode
+  :ensure t
+  :hook ((go-mode-hook . my-go-mode-hook))
+  :config (defun my-go-mode-hook ()
+            (add-hook
+             'before-save-hook
+             'gofmt-before-save)
+            (setq tab-width 2)))
+
+(leaf *gud-mode
+  :config (defun gud-print-at-symbol ()
+            (interactive)
+            (let ((cursor-symbol-pos (bounds-of-thing-at-point
+                                      'symbol)))
+              (if cursor-symbol-pos
+                  (save-excursion
+                    (set-mark
+                     (car cursor-symbol-pos))
+                    (goto-char
+                     (cdr cursor-symbol-pos))
+                    (gud-print
+                     (car cursor-symbol-pos))
+                    (deactivate-mark t)))))
+  (global-set-key
+   (kbd "<f8>")
+   'gud-print-at-symbol)
+  (global-set-key
+   (kbd "<f10>")
+   'gud-next)
+  ;; step over
+  (global-set-key
+   (kbd "<f11>")
+   'gud-step)
+  ;; step in
+  (global-set-key
+   (kbd "S-<f11>")
+   'gud-finish)
+  ;; step out
+  )
+
 (leaf *cpp
   :doc "C++用設定"
   :config ;; todo: coding style 4 tab etc...
@@ -1497,155 +1894,6 @@ This is done by modifying the contents of `RESULT' in place."
           (counsel-gtags-find-file
            (concat prefix target)))))))
 
-(leaf lsp-mode
-  :ensure t
-  :custom ;; debug
-  ((lsp-print-io . t)
-   (lsp-trace . t)
-   (lsp-print-performance . t)
-   (lsp-enable-snippet . nil)
-   ;; general
-   (lsp-auto-guess-root . nil)
-   ;;(lsp-document-sync-method . 'incremental) ;; always send incremental document
-   (lsp-document-sync-method . 2)
-   (lsp-response-timeout . 5)
-   (read-process-output-max . 10485760))
-  :bind ((lsp-mode-map
-          ("C-c C-r" . lsp-rename)))
-  :config ;; if you are adding the support for your language server in separate repo use
-  ;; (add-to-list 'lsp-language-id-configuration '(python-mode . "python"))
-  ;; (lsp-register-client
-  ;;  (make-lsp-client :new-connection (lsp-stdio-connection "pyright")
-  ;;                   :major-modes '(python-mode)
-  ;;                   :server-id 'pyright))
-  ;; (add-to-list 'lsp-language-id-configuration '(csharp-mode . "csharp"))
-  ;;  (lsp-register-client
-  ;;   (make-lsp-client :new-connection (lsp-stdio-connection '(".cache/lsp/omnisharp-roslyn/v1.37.0/OmniSharp.exe" "-lsp"))
-  ;;                    :major-modes '(csharp-mode)
-  ;;                    :server-id 'omnisharp))
-  (add-to-list
-   'lsp-language-id-configuration
-   '(web-mode . "web"))
-  (lsp-register-client
-   (make-lsp-client
-    :new-connection (lsp-stdio-connection '("vls"))
-    :major-modes '(web-mode)
-    :server-id 'vls))
-  ;; パンくずリスト。hookでdisableされるのを防ぐ
-  (lsp-headerline-breadcrumb-mode
-   1)
-  (remove-hook
-   'lsp-unconfigure-hook
-   #'lsp-headerline--disable-breadcrumb
-   t)
-  ;; LSP UI tools
-  (leaf
-    lsp-ui
-    :ensure t
-    :custom ;; lsp-ui-doc
-    ((lsp-ui-doc-enable . nil)
-     (lsp-ui-doc-header . t)
-     (lsp-ui-doc-include-signature . t)
-     (lsp-ui-doc-position . 'at-point)
-     ;; top, bottom, or at-point
-     (lsp-ui-doc-max-width . 100)
-     (lsp-ui-doc-max-height . 30)
-     (lsp-ui-doc-use-childframe . t)
-     (lsp-ui-doc-use-webkit . t)
-     ;; lsp-ui-flycheck
-     (lsp-ui-flycheck-enable . nil)
-     ;; lsp-ui-sideline
-     (lsp-ui-sideline-enable . nil)
-     (lsp-ui-sideline-ignore-duplicate . t)
-     (lsp-ui-sideline-show-symbol . nil)
-     (lsp-ui-sideline-show-hover . nil)
-     (lsp-ui-sideline-show-diagnostics . nil)
-     (lsp-ui-sideline-show-code-actions . nil)
-     ;; lsp-ui-imenu
-     (lsp-ui-imenu-enable . nil)
-     (lsp-ui-imenu-kind-position . 'top)
-     ;; lsp-ui-peek
-     (lsp-ui-peek-enable . t)
-     (lsp-ui-peek-peek-height . 20)
-     (lsp-ui-peek-list-width . 50)
-     (lsp-ui-peek-fontify . 'on-demand))
-    ;; never, on-demand, or always
-    :preface (defun lsp-ui-peek-find-definitions-or-pop ()
-               (interactive)
-               (if (bounds-of-thing-at-point
-                    'word)
-                   (lsp-ui-peek-find-definitions)
-                 (xref-pop-marker-stack)))
-    (defun lsp-ui-peek-find-references-or-pop ()
-      (interactive)
-      (if (bounds-of-thing-at-point
-           'word)
-          (lsp-ui-peek-find-references)
-        (xref-pop-marker-stack)))
-    :bind ((lsp-mode-map
-            ("C-j" . lsp-ui-peek-find-definitions-or-pop))
-           (lsp-mode-map
-            ("C-S-j" . lsp-ui-peek-find-references-or-pop))
-           (lsp-mode-map
-            ("C-h d" . lsp-ui-doc-show))
-           (lsp-mode-map
-            ("C-h a" . lsp-execute-code-action)))
-    :hook ((lsp-mode-hook . lsp-ui-mode)
-           (lsp-mode-hook . lsp-completion-mode))))
-
-(leaf flycheck
-  :custom ((flycheck-check-syntax-automatically . '(mode-enabled save))
-           (flycheck-idle-change-delay . 2)))
-
-(leaf *python-mode
-  :doc "python用設定"
-  :hook (python-mode-hook . (lambda ()
-                              (lsp)
-                              (local-set-key
-                               (kbd "<f5>")
-                               'my-pdb)))
-  :preface (defun my-pdb ()
-             (interactive)
-             (pdb
-              (concat
-               "python -m pdb "
-               (buffer-file-name
-                (current-buffer))))))
-
-(leaf pyvenv
-  :ensure t
-  :hook (python-mode-hook . (lambda ()
-                              (pyvenv-mode 1)
-                              (pyvenv-activate "venv"))))
-
-(leaf vue-mode
-  :doc "vue用設定"
-  :ensure t
-  :mode (("\\.vue\\'" . vue-mode))
-  :hook ((vue-mode-hook . lsp))
-  :custom ((js-indent-level . 2))
-  :config (defun eslint-fix-file ()
-            (interactive)
-            (message
-             "eslint --fix %s"
-             (buffer-name))
-            (call-process
-             "eslint"
-             nil
-             nil
-             nil
-             "--fix"
-             (buffer-file-name))
-            (message
-             "eslint --fix complete")
-            (revert-buffer t t nil)))
-
-(leaf add-node-modules-path
-  :ensure t
-  :config (add-hook
-           'vue-mode-hook
-           #'add-node-modules-path))
-
 (leaf arduino-mode
   :doc "ino(Arduino)用設定"
   :disabled t
@@ -1659,339 +1907,203 @@ This is done by modifying the contents of `RESULT' in place."
    'arduino-mode-hook
    'my-arduino-mode-hook))
 
-(leaf *markdown
-  :doc "markdown用設定"
-  :custom ((markdown-fontify-code-blocks-natively . t))
-  :config (defun markdown-insert-image-from-clipboard ()
-            (interactive)
-            (let ((filepath))
-              (if (eq 1
-                      (call-process-shell-command
-                       (format
-                        "%s %s %s"
-                        "powershell.exe"
-                        "-Command"
-                        "$clip = Get-Clipboard -Format Image; if ($null -eq $clip) {exit 1}")
-                       nil))
-                  (message
-                   "no image on a clipboard")
-                (setq filepath
-                      (read-file-name
-                       "Save file path: "))
-                (call-process-shell-command
-                 (format
-                  "%s %s %s'%s'%s"
-                  "powershell.exe"
-                  "-Command"
-                  "$clip = Get-Clipboard -Format Image; if ($null -ne $clip) { $clip.Save("
-                  filepath
-                  ") }")
-                 (insert
-                  (format
-                   "![](%s)"
-                   (file-relative-name filepath)))
-                 (markdown-display-inline-images)))))
-  (add-hook
-   'markdown-mode-hook
-   (lambda nil
-     (outline-hide-sublevels 1))))
+(leaf org
+  :bind ((org-mode-map
+          ("C-c M-o" . ace-link-org)))
+  :setq ((org-plantuml-jar-path . "~/.emacs.d/lib/plantuml.jar"))
+  :config (org-babel-do-load-languages
+           'org-babel-load-languages
+           '((plantuml . t))))
 
-(leaf exec-path-from-shell
-  :doc "MacOS環境でshell以外から起動したときにpathが引き継がれない問題の対策パッケージ"
-  :if (memq
-       window-system
-       '(mac ns x))
+(leaf crowi
+  :el-get hirocarma/emacs-crowi)
+
+;;; Utilities
+(leaf hideshow
+  :doc "折り畳み機能のパッケージ"
   :ensure t
-  :config (exec-path-from-shell-initialize))
+  :hook ((c-mode-common-hook . hs-minor-mode)
+         (emacs-lisp-mode-hook . hs-minor-mode)
+         (java-mode-hook . hs-minor-mode)
+         (lisp-mode-hook . hs-minor-mode)
+         (parl-mode-hook . hs-minor-mode)
+         (sh-mode-hook . hs-minor-mode))
+  :bind ((hs-minor-mode-map
+          ("C-i" . hs-toggle-hiding))))
 
-(leaf *which-func
-  :doc "関数名表示 lsp-modeでは使わない"
-  :config (which-function-mode)
-  (setq which-func-header-line-format
-        '(which-func-mode
-          ("" which-func-format)))
-  (defadvice which-func-ff-hook (after header-line activate)
-    (when (and which-func-mode
-               (not (bound-and-true-p lsp-mode)))
-      (setq header-line-format
-            which-func-header-line-format)))
-  (defun show-file-name ()
-    (interactive)
-    (kill-new (buffer-file-name))
-    (message
-     "add kill ring: %s"
-     (buffer-file-name)))
-  (defun show-func-name ()
-    (interactive)
-    (kill-new (buffer-file-name))
-    (message
-     "add kill ring: %s"
-     (which-function))))
+(leaf *shell
+  :doc "M-x shell で新しいバッファを作るようにadvice"
+  :preface (defun shell-advice (org-func &rest args)
+             (funcall
+              org-func
+              (generate-new-buffer-name
+               "*shell*")))
+  :advice (:around shell shell-advice))
 
-(leaf mozc
-  :doc "mozcの設定 Linux環境のみ"
-  :config (when (and (eq system-type 'gnu/linux)
-                     (file-exists-p
-                      "/proc/sys/fs/binfmt_misc/WSLInterop"))
-            (setq default-input-method
-                  "japanese-mozc")
-            (setq mozc-leim-title "あ")
-            (global-set-key
-             (kbd "<zenkaku-hankaku>")
-             'toggle-input-method)
-            (require 'mozc-popup)
-            (setq mozc-candidate-style
-                  'popup)
-            (set-face-background
-             'mozc-cand-overlay-description-face
-             "steel blue")
-            (set-face-background
-             'mozc-cand-overlay-even-face
-             "steel blue")
-            (set-face-background
-             'mozc-cand-overlay-odd-face
-             "steel blue")
-            (set-face-background
-             'mozc-cand-overlay-footer-face
-             "steel blue")))
-
-(leaf *window-t
-  :doc "window切替関数の定義とkey-mapの設定"
-  :config (defun other-window-or-split ()
-            (interactive)
-            (when (one-window-p)
-              (split-window-horizontally)
-              (pop-to-buffer nil))
-            (unless (window-minibuffer-p nil)
-              (other-window 1)))
-  ;; global-set-keyではほかのモードで上書きされてしまう ex)dired-mode
-  (defvar window-t-minor-mode-map (let ((map (make-sparse-keymap)))
-                                    (define-key map (kbd "C-t")
-                                      'other-window-or-split)
-                                    map)
-    "window-t-minor-mode keymap.")
-  (define-minor-mode window-t-minor-mode
-    "A minor mode that window-t key settings override annoying major modes."
-    :init-value t
-    :lighter "window-t")
-  (window-t-minor-mode 1))
-
-(leaf *titlebar
-  :doc "タイトルバーに時計などを表示"
-  :config (when (window-system)
-            ;; display-timeより先にsetしておかないとdefaultの書式になる
-            (setq display-time-string-forms
-                  '((format
-                     "%s/%s/%s"
-                     year
-                     month
-                     day)
-                    (format
-                     "(%s:%s)"
-                     24-hours
-                     minutes)))
-            (display-time)
-            ;; display-time-stringの有効化
-            (display-battery-mode 1)
-            (setq battery-mode-line-format
-                  " %b%p%%")
-            (with-eval-after-load
-                'doom-modeline
-              ;; doom-modelineがbattery-mode-line-stringを更新させなくするのでremove
-              (advice-remove
-               'battery-update
-               'doom-modeline-update-battery-status))
-            ;; バッファがファイルのときはフルパス、でなければバッファ名表示
-            ;; if(buffer-file-name) の評価がsetq時で終わらないよう:eval
-            (setq frame-title-format
-                  '(""
-                    (:eval (if (buffer-file-name)
-                               " %f"
-                             " %b"))
-                    " --- "
-                    display-time-string
-                    " "
-                    battery-mode-line-string))))
-
-(leaf nxml-mode
-  :doc "xml, xaml用設定"
-  :mode "\\.xaml\\'"
-  :bind ((nxml-mode-map
-          ("C-c C-o" . hs-toggle-hiding))
-         (nxml-mode-map
-          ("C-c C-l" . hs-hide-level))
-         (nxml-mode-map
-          ("C-c C-a" . hs-show-all)))
-  :mode (("\\.xaml\\'" . nxml-mode))
-  :config ;; エラー行にマークがつくようにadvice
-  (defun rng-mark-error-advice (message beg end)
-    (let ((overlays (overlays-in beg end))
-          (continue t))
-      (while (and overlays continue)
-        (let ((o (car overlays)))
-          (when (and (eq (overlay-get o 'category)
-                         'rng-error)
-                     (= (overlay-start o) beg)
-                     (= (overlay-end o) end))
-            (overlay-put
-             o
-             'before-string
-             (propertize
-              "!"
-              'display
-              (list
-               'left-fringe
-               'right-triangle)))
-            (setq continue nil)))
-        (setq overlays (cdr overlays)))))
-  (advice-add
-   'rng-mark-error
-   :after 'rng-mark-error-advice)
-  ;; エラー箇所に波下線を出すface設定
-  (set-face-attribute
-   'rng-error
-   nil
-   :underline '(:color "red" :style wave))
-  (setq nxml-slash-auto-complete-flag
-        t)
-  (add-hook
-   'nxml-mode-hook
-   '(lambda
-      nil
-      (hs-minor-mode 1)
-      (setq nxml-child-indent 4)))
-  (add-to-list
-   'hs-special-modes-alist
-   '(nxml-mode
-     "<!--\\|<[^/>]>\\|<[^/][^>]*[^/]>"
-     ""
-     "<!--"
-     nxml-forward-element
-     nil)
-   nil
-   'eq))
-
-(leaf *ivy
-  :doc "emacsコマンド補完パッケージ"
+(leaf *dired
+  :doc "diredでファイルオープンやディレクトリ移動で新しいバッファ開かない設定など"
   :config (leaf
-            ivy
-            :ensure t
-            :bind ((ivy-minibuffer-map
-                    ("<escape>" . minibuffer-keyboard-quit)))
-            :custom ((ivy-use-virtual-buffers . t)
-                     (ivy-tab-space . t)
-                     (ivy-height-alist . '((t
-                                            lambda (_caller)
-                                            (/ (frame-height) 3)))))
-            :config (when (setq enable-recursive-minibuffers
-                                t)
-                      (minibuffer-depth-indicate-mode
-                       1))
-            (setcdr
-             (assq t
-                   ivy-format-functions-alist)
-             #'ivy-format-function-line)
-            (ivy-mode 1))
-  (leaf ivy-hydra :ensure t)
+            all-the-icons-dired
+            :ensure t)
   (leaf
-    counsel
-    :ensure t
-    :init (defun ivy-with-thing-at-point (cmd)
-            (let ((ivy-initial-inputs-alist (list
-                                             (cons cmd
-                                                   (thing-at-point 'symbol)))))
-              (funcall cmd)))
-    (defun counsel-rg-thing-at-point ()
+    *windows
+    :if (or (eq system-type 'windows-nt)
+            (and (eq system-type 'gnu/linux)
+                 (file-exists-p
+                  "/proc/sys/fs/binfmt_misc/WSLInterop")))
+    :config (defun dired-open-file ()
+              "In dired, open the file named on this line."
+              (interactive)
+              (let* ((file (if (eq system-type 'windows-nt)
+                               (dired-get-filename)
+                             (shell-command-to-string
+                              (concat
+                               "wslpath -w"
+                               " "
+                               (dired-get-filename)))))
+                     (open (if (eq system-type 'windows-nt)
+                               "start"
+                             "explorer.exe")))
+                (message "Opening %s..." file)
+                (shell-command
+                 (mapconcat
+                  #'shell-quote-argument
+                  (list open file)
+                  "
+"))
+                ;;(call-process "gnome-open" nil 0 nil file)
+                (message
+                 "Opening %s done"
+                 file)))
+    (add-hook
+     'dired-mode-hook
+     '(lambda
+        ()
+        (define-key dired-mode-map "\C-o"
+          'dired-open-file)
+        (define-key dired-mode-map "\C-l"
+          'dired-up-directory)
+        (all-the-icons-dired-mode))))
+  (leaf
+    *darwin
+    :if (eq system-type 'darwin)
+    :config (defun open-mac (path)
+              (start-process
+               "dired-open-mac"
+               nil
+               "open"
+               path))
+    (defun quicklook-file (path)
       (interactive)
-      (ivy-with-thing-at-point
-       'counsel-rg))
-    ;; directory を指定して ag やり直し．クエリは再利用する
-    (defun my-counsel-rg-in-dir (_arg)
-      "Search again with new root directory."
-      (let ((current-prefix-arg '(4)))
-        (counsel-rg ivy-text nil "")))
-    ;; also disable extra-ag-args
-    (defun counsel-bookmark-thing-at-point ()
+      (defvar cur nil)
+      (defvar old nil)
+      (setq old cur)
+      (setq cur
+            (start-process
+             "ql-file"
+             nil
+             "qlmanage"
+             "-p"
+             path))
+      (when old (delete-process old)))
+    (defun my-dired-open ()
       (interactive)
-      (let ((ivy-initial-inputs-alist (list
-                                       (cons 'counsel-bookmark
-                                             (format
-                                              "%s:%d\t::%s\t::%s"
-                                              (buffer-name)
-                                              (line-number-at-pos)
-                                              (which-function)
-                                              (thing-at-point 'line))))))
-        (counsel-bookmark)))
-    (defun counsel-up-directory-or-delete ()
+      (let ((exts-ql '("jpeg" "jpg" "png" "gif"))
+            (exts-open '("avi" "mkv" "mp4" "pdf")))
+        (cond ((file-accessible-directory-p
+                (dired-get-file-for-visit))
+               (call-interactively
+                'dired-find-alternate-file))
+              ((member
+                (downcase
+                 (file-name-extension
+                  (dired-get-file-for-visit)))
+                exts-ql)
+               (funcall
+                'quicklook-file
+                (dired-get-file-for-visit)))
+              ((member
+                (downcase
+                 (file-name-extension
+                  (dired-get-file-for-visit)))
+                exts-open)
+               (funcall
+                'open-mac
+                (dired-get-file-for-visit)))
+              (t
+               (call-interactively
+                'dired-find-file-other-window)))))
+    (add-hook
+     'dired-mode-hook
+     '(lambda
+        ()
+        (define-key dired-mode-map "\C-o"
+          'my-dired-open))))
+  (leaf
+    *common
+    :config ;; dired-find-alternate-file の有効化
+    (put
+     'dired-find-alternate-file
+     'disabled
+     nil)
+    ;; ファイルなら別バッファで、ディレクトリなら同じバッファで開く
+    (defun dired-open-in-accordance-with-situation ()
       (interactive)
-      (if ivy--directory
-          (counsel-up-directory)
-        (ivy-kill-line)))
-    (defun my-ivy--directory-enter (&optional arg)
-      (interactive "p")
-      (ivy-insert-current)
-      (let (dir)
-        (if (and (> ivy--length 0)
-                 (not (string=
-                       (ivy-state-current ivy-last)
-                       "./"))
-                 (setq dir
-                       (ivy-expand-file-if-directory
-                        (ivy-state-current ivy-last))))
-            (progn
-              (ivy--cd dir)
-              (ivy--exhibit))
-          (ivy-insert-current))))
-    :bind (("M-x" . counsel-M-x)
-           ;;("C-M-z" . counsel-fzf)
-           ("C-M-r" . counsel-recentf)
-           ;;("C-x C-b" . counsel-ibuffer)
-           ("C-c i" . counsel-imenu)
-           ("C-x b" . ivy-switch-buffer)
-           ("C-M-f" . counsel-rg-thing-at-point)
-           ("M-y" . counsel-yank-pop)
-           ("C-x C-f" . counsel-find-file)
-           ("C-x C-b" . counsel-bookmark-thing-at-point)
-           (ivy-minibuffer-map
-            ("C-l" . counsel-up-directory-or-delete))
-           (ivy-minibuffer-map
-            ("<tab>" . my-ivy--directory-enter))
-           (counsel-find-file-map
-            ("C-l" . counsel-up-directory))
-           (counsel-find-file-map
-            ("<tab>" . my-ivy--directory-enter)))
-    :setq ((ivy-on-del-error-function
-            function
-            ignore)
-           (ivy-initial-inputs-alist . nil))
-    :config (setq counsel-find-file-ignore-regexp
-                  (regexp-opt '("./" "../")))
-    (ivy-add-actions
-     'counsel-rg
-     '(("r"
-        my-counsel-rg-in-dir
-        "search in directory")))
-    (counsel-mode 1))
-  (leaf
-    swiper
-    :ensure t
-    :bind (("M-s s" . swiper-thing-at-point)
-           (isearch-mode-map
-            ("C-i" . swiper-from-isearch))))
-  (leaf
-    ivy-rich
-    :ensure t
-    :config (ivy-rich-mode 1))
-  (leaf
-    all-the-icons-ivy
-    :ensure t
-    :config (all-the-icons-ivy-setup)
-    (dolist (command
-             '(counsel-projectile-switch-project
-               counsel-ibuffer))
-      (add-to-list
-       'all-the-icons-ivy-buffer-commands
-       command))))
+      (let ((file (dired-get-filename)))
+        (if (file-directory-p file)
+            (dired-find-alternate-file)
+          (dired-find-file))))
+    (add-hook
+     'dired-mode-hook
+     '(lambda
+        ()
+        ;; RET 標準の dired-find-file では dired バッファが複数作られるので
+        ;; dired-find-alternate-file を代わりに使う
+        (define-key dired-mode-map (kbd "RET")
+          'dired-open-in-accordance-with-situation)
+        (define-key dired-mode-map (kbd "a")
+          'dired-find-file)))))
+
+(leaf *ediff
+  :doc "ediff で水平2分割で表示し、制御用のframeを生成させない"
+  :custom ((ediff-window-setup-function . 'ediff-setup-windows-plain)
+           (ediff-split-window-function . 'split-window-horizontally)
+           (ediff-current-diff-overlay-A . t)
+           (ediff-current-diff-overlay-B . t)))
+
+(leaf magit :ensure t)
+
+(leaf migemo
+  :doc "検索の際に日本語をローマ字読みでヒットさせるパッケージ"
+  :ensure t
+  :custom ((migemo-command . "cmigemo")
+           (migemo-options . '("-q" "--emacs" "-i" "\a"))
+           (migemo-user-dictionary . nil)
+           (migemo-regex-dictionary . nil)
+           (migemo-use-pattern-alist . t)
+           (migemo-use-frequent-pattern-alist . t)
+           (migemo-pattern-alist-length . 1000)
+           (migemo-coding-system . 'utf-8-unix))
+  :config (setq migemo-dictionary
+                (expand-file-name
+                 "~/.emacs.d/lib/dict/utf-8/migemo-dict"))
+  (load-library "migemo")
+  (migemo-init))
+
+(leaf ripgrep
+  :doc "Grepの改良版 ripgrepのemacsクライアントパッケージ"
+  :ensure t
+  :custom ((ripgrep-executable . "rg")
+           (ripgrep-arguments . '("-S"))))
+
+(leaf ssh
+  :doc "sshでshellを実行するためのパッケージ"
+  :ensure t
+  :custom ((ssh-directory-tracking-mode . t)
+           (dirtrackp .nil))
+  :config (with-eval-after-load
+              'ssh
+            (shell-dirtrack-mode t)))
 
 (leaf google-translate
   :doc "Google翻訳パッケージ"
@@ -2036,14 +2148,6 @@ This is done by modifying the contents of `RESULT' in place."
   (defun google-translate--search-tkk ()
     "Search TKK."
     (list 430675 2721866130)))
-
-(leaf org
-  :bind ((org-mode-map
-          ("C-c M-o" . ace-link-org)))
-  :setq ((org-plantuml-jar-path . "~/.emacs.d/lib/plantuml.jar"))
-  :config (org-babel-do-load-languages
-           'org-babel-load-languages
-           '((plantuml . t))))
 
 (leaf eww
   :disabled t
@@ -2192,107 +2296,5 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
       (xwidget-webkit-browse-url
        encoded-url
        (not arg)))))
-
-(leaf *ediff
-  :doc "ediff で水平2分割で表示し、制御用のframeを生成させない"
-  :custom ((ediff-window-setup-function . 'ediff-setup-windows-plain)
-           (ediff-split-window-function . 'split-window-horizontally)
-           (ediff-current-diff-overlay-A . t)
-           (ediff-current-diff-overlay-B . t)))
-
-(leaf magit :ensure t)
-
-(leaf eldoc
-  :hook ((emacs-lisp-mode-hook . turn-on-eldoc-mode))
-  :preface (defun my:shutup-eldoc-message (f &optional string)
-             (unless (active-minibuffer-window)
-               (funcall f string)))
-  :advice (:around eldoc-message
-                   my:shutup-eldoc-message))
-
-(leaf *ediff
-  :custom ((ediff-window-setup-function . 'ediff-setup-windows-plain)
-           (ediff-split-window-function . 'split-window-horizontally)))
-
-(leaf *pulse-line
-  :doc "windowを切り替えた時などに現在の行をハイライトする"
-  :custom ((pulse-iterations . 1))
-  :config (defun pulse-line (&rest _)
-            "Pulse the current line."
-            (pulse-momentary-highlight-one-line
-             (point)))
-  (dolist (command
-           '(scroll-up-command
-             scroll-down-command
-             recenter-top-bottom
-             other-window))
-    (advice-add
-     command
-     :after #'pulse-line)))
-
-(leaf *gud-mode
-  :config (defun gud-print-at-symbol ()
-            (interactive)
-            (let ((cursor-symbol-pos (bounds-of-thing-at-point
-                                      'symbol)))
-              (if cursor-symbol-pos
-                  (save-excursion
-                    (set-mark
-                     (car cursor-symbol-pos))
-                    (goto-char
-                     (cdr cursor-symbol-pos))
-                    (gud-print
-                     (car cursor-symbol-pos))
-                    (deactivate-mark t)))))
-  (global-set-key
-   (kbd "<f8>")
-   'gud-print-at-symbol)
-  (global-set-key
-   (kbd "<f10>")
-   'gud-next)
-  ;; step over
-  (global-set-key
-   (kbd "<f11>")
-   'gud-step)
-  ;; step in
-  (global-set-key
-   (kbd "S-<f11>")
-   'gud-finish)
-  ;; step out
-  )
-
-(leaf crowi
-  :el-get hirocarma/emacs-crowi)
-
-(leaf go-mode
-  :ensure t
-  :hook ((go-mode-hook . my-go-mode-hook))
-  :config (defun my-go-mode-hook ()
-            (add-hook
-             'before-save-hook
-             'gofmt-before-save)
-            (setq tab-width 2)))
-
-(leaf *shell
-  :doc "M-x shell で新しいバッファを作るようにadvice"
-  :preface (defun shell-advice (org-func &rest args)
-             (funcall
-              org-func
-              (generate-new-buffer-name
-               "*shell*")))
-  :advice (:around shell shell-advice))
-
-(leaf tr-ime
-  :doc "NTEmacsでIMEの自動ON/OFFするためのパッケージ"
-  :if (eq system-type 'windows-nt)
-  :ensure t
-  :custom ((default-input-method . "W32-IME")
-           (w32-ime-mode-line-state-indicator . "Ａ")
-           (w32-ime-mode-line-state-indicator-list . '("-" "あ" "Ａ")))
-  :config (advice-add
-           'w32-ime-init-mode-line-display
-           :override (lambda ()))
-  (tr-ime-standard-install)
-  (w32-ime-initialize))
 
 ;;; init.el ends here
