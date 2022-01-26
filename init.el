@@ -50,21 +50,14 @@
       :config (leaf el-get :ensure t)
       (leaf-keywords-init))))
 
-(leaf
-  leaf
-  :config ;;leafのデバッグ用パッケージ
-  (leaf leaf-convert :ensure t))
-
-(leaf
-  utils
+(leaf utils
   :el-get fujimotok/emacs-utils
   :config (when (and (eq system-type 'gnu/linux)
                      (file-exists-p
                       "/proc/sys/fs/binfmt_misc/WSLInterop"))
             (battery-wsl-init)))
 
-(leaf
-  cus-start
+(leaf cus-start
   :doc "builtin"
   :init
   ;; emacs 28.1から入る予定？
@@ -173,13 +166,11 @@ active region is added to the search string."
    'prog-mode-hook
    #'hs-minor-mode))
 
-(leaf
-  doom-themes
+(leaf doom-themes
   :ensure t
   :config (load-theme 'doom-dracula t))
 
-(leaf
-  *mode-line
+(leaf *mode-line
   :config (leaf
             nyan-mode
             :ensure t
@@ -433,13 +424,11 @@ mouse-1: Display Line and Column Mode Menu"
           my/parrot)))
     (doom-modeline-mode t)))
 
-(leaf
-  lispy
+(leaf lispy
   :ensure t
   :hook ((emacs-lisp-mode-hook . lispy-mode)))
 
-(leaf
-  hideshow
+(leaf hideshow
   :ensure t
   :hook ((c-mode-common-hook . hs-minor-mode)
          (emacs-lisp-mode-hook . hs-minor-mode)
@@ -450,8 +439,7 @@ mouse-1: Display Line and Column Mode Menu"
   :bind ((hs-minor-mode-map
           ("C-i" . hs-toggle-hiding))))
 
-(leaf
-  rainbow-delimiters
+(leaf rainbow-delimiters
   :ensure t
   :custom-face ((rainbow-delimiters-depth-1-face . `((t (:forground "#9a4040"))))
                 (rainbow-delimiters-depth-2-face . `((t (:forground "#ff5e5e"))))
@@ -469,8 +457,7 @@ mouse-1: Display Line and Column Mode Menu"
   (global-rainbow-delimiters-mode
    t))
 
-(leaf
-  ssh
+(leaf ssh
   :ensure t
   :custom ((ssh-directory-tracking-mode . t)
            (dirtrackp .nil))
@@ -478,8 +465,7 @@ mouse-1: Display Line and Column Mode Menu"
               'ssh
             (shell-dirtrack-mode t)))
 
-(leaf
-  company
+(leaf company
   :ensure t
   :bind (("<tab>" . company-indent-or-complete-common)
          (company-active-map
@@ -603,8 +589,7 @@ mouse-1: Display Line and Column Mode Menu"
     :custom ((company-quickhelp-delay . 1)))
   (global-company-mode))
 
-(leaf
-  migemo
+(leaf migemo
   :ensure t
   :custom ((migemo-command . "cmigemo")
            (migemo-options . '("-q" "--emacs" "-i" "\a"))
@@ -620,14 +605,12 @@ mouse-1: Display Line and Column Mode Menu"
   (load-library "migemo")
   (migemo-init))
 
-(leaf
-  ripgrep
+(leaf ripgrep
   :ensure t
   :custom ((ripgrep-executable . "rg")
            (ripgrep-arguments . '("-S"))))
 
-(leaf
-  *windows-nt
+(leaf *windows-nt
   :if (eq system-type 'windows-nt)
   :config ;; win環境でsvnがsjisで吐くのでbufferも追従するように与える
   (add-to-list
@@ -643,8 +626,7 @@ mouse-1: Display Line and Column Mode Menu"
       'sjis-dos
       'sjis-dos))))
 
-(leaf
-  *dired
+(leaf *dired
   :config (leaf
             all-the-icons-dired
             :ensure t)
@@ -767,8 +749,7 @@ mouse-1: Display Line and Column Mode Menu"
         (define-key dired-mode-map (kbd "a")
           'dired-find-file)))))
 
-(leaf
-  *csharp
+(leaf *csharp
   :config (leaf omnisharp :ensure t)
   ;; omniSharp lsp に移行中。問題なければ上記omnisharpは不要
   (leaf
@@ -1436,8 +1417,7 @@ This is done by modifying the contents of `RESULT' in place."
      :around 'omnisharp--do-server-start-advice))
   (leaf open-in-msvs :ensure t))
 
-(leaf
-  *cpp
+(leaf *cpp
   :config ;; todo: coding style 4 tab etc...
   (leaf
     counsel-gtags
@@ -1503,8 +1483,7 @@ This is done by modifying the contents of `RESULT' in place."
           (counsel-gtags-find-file
            (concat prefix target)))))))
 
-(leaf
-  lsp-mode
+(leaf lsp-mode
   :ensure t
   :custom ;; debug
   ((lsp-print-io . t)
@@ -1600,28 +1579,11 @@ This is done by modifying the contents of `RESULT' in place."
     :hook ((lsp-mode-hook . lsp-ui-mode)
            (lsp-mode-hook . lsp-completion-mode))))
 
-(leaf
-  flycheck
+(leaf flycheck
   :custom ((flycheck-check-syntax-automatically . '(mode-enabled save))
-           (flycheck-idle-change-delay . 2))
-  :config (add-hook
-           'flycheck-mode-hook
-           (lambda ()
-             (flycheck-add-mode
-              'javascript-eslint
-              'vue-mode)
-             (flycheck-add-mode
-              'javascript-eslint
-              'vue-html-mode)
-             (flycheck-add-mode
-              'javascript-eslint
-              'css-mode)
-             (flycheck-add-mode
-              'javascript-eslint
-              'web-mode))))
+           (flycheck-idle-change-delay . 2)))
 
-(leaf
-  *python-mode
+(leaf *python-mode
   :hook (python-mode-hook . (lambda ()
                               (lsp)
                               (local-set-key
@@ -1635,15 +1597,13 @@ This is done by modifying the contents of `RESULT' in place."
                (buffer-file-name
                 (current-buffer))))))
 
-(leaf
-  pyvenv
+(leaf pyvenv
   :ensure t
   :hook (python-mode-hook . (lambda ()
                               (pyvenv-mode 1)
                               (pyvenv-activate "venv"))))
 
-(leaf
-  vue-mode
+(leaf vue-mode
   :doc "TODO: revert buffer しないと補完が効かない"
   :ensure t
   :mode (("\\.vue\\'" . vue-mode))
@@ -1665,15 +1625,13 @@ This is done by modifying the contents of `RESULT' in place."
              "eslint --fix complete")
             (revert-buffer t t nil)))
 
-(leaf
-  add-node-modules-path
+(leaf add-node-modules-path
   :ensure t
   :config (add-hook
            'vue-mode-hook
            #'add-node-modules-path))
 
-(leaf
-  arduino-mode
+(leaf arduino-mode
   :disabled t
   :custom ((arduino-executable . "arduino_debug")
            (flycheck-arduino-executable . "arduino_debug"))
@@ -1685,8 +1643,7 @@ This is done by modifying the contents of `RESULT' in place."
    'arduino-mode-hook
    'my-arduino-mode-hook))
 
-(leaf
-  *markdown
+(leaf *markdown
   :custom ((markdown-fontify-code-blocks-natively . t))
   :config (defun markdown-insert-image-from-clipboard ()
             (interactive)
@@ -1773,8 +1730,7 @@ You can customize these variables for your enviroment.
    'toggle-frame-maximized
    :around 'toggle-frame-maximized-advice))
 
-(leaf
-  *which-func
+(leaf *which-func
   ;; 関数名表示 lsp-modeでは使わない
   :config (which-function-mode)
   (setq which-func-header-line-format
@@ -1824,8 +1780,7 @@ You can customize these variables for your enviroment.
    'mozc-cand-overlay-footer-face
    "steel blue"))
 
-(leaf
-  *window-t
+(leaf *window-t
   :doc "window切替関数の定義とkey-mapの設定"
   :config (defun other-window-or-split ()
             (interactive)
@@ -1882,8 +1837,7 @@ You can customize these variables for your enviroment.
           " "
           battery-mode-line-string)))
 
-(leaf
-  nxml-mode
+(leaf nxml-mode
   :mode "\\.xaml\\'"
   :bind ((nxml-mode-map
           ("C-c C-o" . hs-toggle-hiding))
@@ -1940,8 +1894,7 @@ You can customize these variables for your enviroment.
    nil
    'eq))
 
-(leaf
-  *ivy
+(leaf *ivy
   :config (leaf
             ivy
             :ensure t
@@ -2062,8 +2015,7 @@ You can customize these variables for your enviroment.
        'all-the-icons-ivy-buffer-commands
        command))))
 
-(leaf
-  google-translate
+(leaf google-translate
   :ensure t
   :bind (("C-x t" . google-translate-enja-or-jaen))
   :config (defvar google-translate-english-chars "[:ascii:]’“”–"
@@ -2106,8 +2058,7 @@ You can customize these variables for your enviroment.
     "Search TKK."
     (list 430675 2721866130)))
 
-(leaf
-  org
+(leaf org
   :bind ((org-mode-map
           ("C-c M-o" . ace-link-org)))
   :setq ((org-plantuml-jar-path . "~/.emacs.d/lib/plantuml.jar"))
@@ -2115,8 +2066,7 @@ You can customize these variables for your enviroment.
            'org-babel-load-languages
            '((plantuml . t))))
 
-(leaf
-  eww
+(leaf eww
   :disabled t
   :bind ((eww-mode-map
           ("e" . ace-link-eww)))
@@ -2157,8 +2107,7 @@ You can customize these variables for your enviroment.
                    'help-echo)))
           (nreverse candidates))))))
 
-(leaf
-  *xwidget-webkit
+(leaf *xwidget-webkit
   :disabled t
   :hook ((xwidget-webkit-mode-hook . xwidget-webkit-mode-hook-func))
   :config (defun xwidget-webkit-mode-hook-func nil
@@ -2270,8 +2219,7 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   (setq shell-file-name
         "/bin/bash"))
 
-(leaf
-  *ediff
+(leaf *ediff
   :custom ((ediff-window-setup-function . 'ediff-setup-windows-plain)
            (ediff-split-window-function . 'split-window-horizontally)
            (ediff-current-diff-overlay-A . t)
@@ -2279,8 +2227,7 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
 
 (leaf magit :ensure t)
 
-(leaf
-  eldoc
+(leaf eldoc
   :hook ((emacs-lisp-mode-hook . turn-on-eldoc-mode))
   :preface (defun my:shutup-eldoc-message (f &optional string)
              (unless (active-minibuffer-window)
@@ -2288,13 +2235,11 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   :advice (:around eldoc-message
                    my:shutup-eldoc-message))
 
-(leaf
-  *ediff
+(leaf *ediff
   :custom ((ediff-window-setup-function . 'ediff-setup-windows-plain)
            (ediff-split-window-function . 'split-window-horizontally)))
 
-(leaf
-  *pulse-line
+(leaf *pulse-line
   :custom ((pulse-iterations . 1))
   :config (defun pulse-line (&rest _)
             "Pulse the current line."
@@ -2309,8 +2254,7 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
      command
      :after #'pulse-line)))
 
-(leaf
-  *gud-mode
+(leaf *gud-mode
   :config (defun gud-print-at-symbol ()
             (interactive)
             (let ((cursor-symbol-pos (bounds-of-thing-at-point
@@ -2341,12 +2285,10 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   ;; step out
   )
 
-(leaf
-  crowi
+(leaf crowi
   :el-get hirocarma/emacs-crowi)
 
-(leaf
-  go-mode
+(leaf go-mode
   :ensure t
   :hook ((go-mode-hook . my-go-mode-hook))
   :config (defun my-go-mode-hook ()
@@ -2355,8 +2297,7 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
              'gofmt-before-save)
             (setq tab-width 2)))
 
-(leaf
-  *shell
+(leaf *shell
   :preface (defun shell-advice (org-func &rest args)
              (funcall
               org-func
@@ -2364,8 +2305,7 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
                "*shell*")))
   :advice (:around shell shell-advice))
 
-(leaf
-  tr-ime
+(leaf tr-ime
   :if (eq system-type 'windows-nt)
   :ensure t
   :custom ((default-input-method . "W32-IME")
