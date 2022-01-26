@@ -961,6 +961,37 @@ mouse-1: Display Line and Column Mode Menu"
   :custom ((flycheck-check-syntax-automatically . '(mode-enabled save))
            (flycheck-idle-change-delay . 2)))
 
+(leaf *gud-mode
+  :config (defun gud-print-at-symbol ()
+            (interactive)
+            (let ((cursor-symbol-pos (bounds-of-thing-at-point
+                                      'symbol)))
+              (if cursor-symbol-pos
+                  (save-excursion
+                    (set-mark
+                     (car cursor-symbol-pos))
+                    (goto-char
+                     (cdr cursor-symbol-pos))
+                    (gud-print
+                     (car cursor-symbol-pos))
+                    (deactivate-mark t)))))
+  ;; watch
+  (global-set-key
+   (kbd "<f8>")
+   'gud-print-at-symbol)
+  ;; step over
+  (global-set-key
+   (kbd "<f10>")
+   'gud-next)
+  ;; step in
+  (global-set-key
+   (kbd "<f11>")
+   'gud-step)
+  ;; step out
+  (global-set-key
+   (kbd "S-<f11>")
+   'gud-finish))
+
 (leaf eldoc
   :hook ((emacs-lisp-mode-hook . turn-on-eldoc-mode))
   :preface (defun my:shutup-eldoc-message (f &optional string)
@@ -1769,23 +1800,25 @@ This is done by modifying the contents of `RESULT' in place."
 (leaf *python-mode
   :doc "python用設定"
   :hook (python-mode-hook . (lambda ()
-                              (lsp)
                               (local-set-key
                                (kbd "<f5>")
-                               'my-pdb)))
-  :preface (defun my-pdb ()
-             (interactive)
-             (pdb
-              (concat
-               "python -m pdb "
-               (buffer-file-name
-                (current-buffer))))))
-
-(leaf pyvenv
-  :ensure t
-  :hook (python-mode-hook . (lambda ()
-                              (pyvenv-mode 1)
-                              (pyvenv-activate "venv"))))
+                               'my-pdb)
+                              (lsp)))
+  :preface
+  (defun my-pdb ()
+    (interactive)
+    (pdb
+     (concat
+      "python -m pdb "
+      (buffer-file-name
+       (current-buffer)))))
+  :config
+  (leaf
+    pyvenv
+    :ensure t
+    :hook (python-mode-hook . (lambda ()
+                                (pyvenv-mode 1)
+                                (pyvenv-activate "venv")))))
 
 (leaf go-mode
   :ensure t
@@ -1795,37 +1828,6 @@ This is done by modifying the contents of `RESULT' in place."
              'before-save-hook
              'gofmt-before-save)
             (setq tab-width 2)))
-
-(leaf *gud-mode
-  :config (defun gud-print-at-symbol ()
-            (interactive)
-            (let ((cursor-symbol-pos (bounds-of-thing-at-point
-                                      'symbol)))
-              (if cursor-symbol-pos
-                  (save-excursion
-                    (set-mark
-                     (car cursor-symbol-pos))
-                    (goto-char
-                     (cdr cursor-symbol-pos))
-                    (gud-print
-                     (car cursor-symbol-pos))
-                    (deactivate-mark t)))))
-  (global-set-key
-   (kbd "<f8>")
-   'gud-print-at-symbol)
-  (global-set-key
-   (kbd "<f10>")
-   'gud-next)
-  ;; step over
-  (global-set-key
-   (kbd "<f11>")
-   'gud-step)
-  ;; step in
-  (global-set-key
-   (kbd "S-<f11>")
-   'gud-finish)
-  ;; step out
-  )
 
 (leaf *cpp
   :doc "C++用設定"
