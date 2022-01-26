@@ -51,6 +51,7 @@
       (leaf-keywords-init))))
 
 (leaf utils
+  :doc "自作関数"
   :el-get fujimotok/emacs-utils
   :config (when (and (eq system-type 'gnu/linux)
                      (file-exists-p
@@ -58,7 +59,7 @@
             (battery-wsl-init)))
 
 (leaf cus-start
-  :doc "builtin"
+  :doc "builtin機能の設定"
   :init
   ;; emacs 28.1から入る予定？
   (defun isearch-forward-thing-at-point ()
@@ -167,10 +168,12 @@ active region is added to the search string."
    #'hs-minor-mode))
 
 (leaf doom-themes
+  :doc "doomテーマのロード"
   :ensure t
   :config (load-theme 'doom-dracula t))
 
 (leaf *mode-line
+  :doc "モードラインの設定"
   :config (leaf
             nyan-mode
             :ensure t
@@ -425,10 +428,12 @@ mouse-1: Display Line and Column Mode Menu"
     (doom-modeline-mode t)))
 
 (leaf lispy
+  :doc "lisp編集時の移動を楽にするパッケージ"
   :ensure t
   :hook ((emacs-lisp-mode-hook . lispy-mode)))
 
 (leaf hideshow
+  :doc "折り畳み機能のパッケージ"
   :ensure t
   :hook ((c-mode-common-hook . hs-minor-mode)
          (emacs-lisp-mode-hook . hs-minor-mode)
@@ -440,6 +445,7 @@ mouse-1: Display Line and Column Mode Menu"
           ("C-i" . hs-toggle-hiding))))
 
 (leaf rainbow-delimiters
+  :doc "カッコに色をつけるパッケージ"
   :ensure t
   :custom-face ((rainbow-delimiters-depth-1-face . `((t (:forground "#9a4040"))))
                 (rainbow-delimiters-depth-2-face . `((t (:forground "#ff5e5e"))))
@@ -458,6 +464,7 @@ mouse-1: Display Line and Column Mode Menu"
    t))
 
 (leaf ssh
+  :doc "sshでshellを実行するためのパッケージ"
   :ensure t
   :custom ((ssh-directory-tracking-mode . t)
            (dirtrackp .nil))
@@ -466,6 +473,7 @@ mouse-1: Display Line and Column Mode Menu"
             (shell-dirtrack-mode t)))
 
 (leaf company
+  :doc "補完機能パッケージ"
   :ensure t
   :bind (("<tab>" . company-indent-or-complete-common)
          (company-active-map
@@ -590,6 +598,7 @@ mouse-1: Display Line and Column Mode Menu"
   (global-company-mode))
 
 (leaf migemo
+  :doc "検索の際に日本語をローマ字読みでヒットさせるパッケージ"
   :ensure t
   :custom ((migemo-command . "cmigemo")
            (migemo-options . '("-q" "--emacs" "-i" "\a"))
@@ -606,11 +615,13 @@ mouse-1: Display Line and Column Mode Menu"
   (migemo-init))
 
 (leaf ripgrep
+  :doc "Grepの改良版 ripgrepのemacsクライアントパッケージ"
   :ensure t
   :custom ((ripgrep-executable . "rg")
            (ripgrep-arguments . '("-S"))))
 
 (leaf *windows-nt
+  :doc "Windows環境のみの設定"
   :if (eq system-type 'windows-nt)
   :config ;; win環境でsvnがsjisで吐くのでbufferも追従するように与える
   (add-to-list
@@ -627,6 +638,7 @@ mouse-1: Display Line and Column Mode Menu"
       'sjis-dos))))
 
 (leaf *dired
+  :doc "diredでファイルオープンやディレクトリ移動で新しいバッファ開かない設定など"
   :config (leaf
             all-the-icons-dired
             :ensure t)
@@ -750,6 +762,7 @@ mouse-1: Display Line and Column Mode Menu"
           'dired-find-file)))))
 
 (leaf *csharp
+  :doc "C#用設定"
   :config (leaf omnisharp :ensure t)
   ;; omniSharp lsp に移行中。問題なければ上記omnisharpは不要
   (leaf
@@ -1418,6 +1431,7 @@ This is done by modifying the contents of `RESULT' in place."
   (leaf open-in-msvs :ensure t))
 
 (leaf *cpp
+  :doc "C++用設定"
   :config ;; todo: coding style 4 tab etc...
   (leaf
     counsel-gtags
@@ -1584,6 +1598,7 @@ This is done by modifying the contents of `RESULT' in place."
            (flycheck-idle-change-delay . 2)))
 
 (leaf *python-mode
+  :doc "python用設定"
   :hook (python-mode-hook . (lambda ()
                               (lsp)
                               (local-set-key
@@ -1604,7 +1619,7 @@ This is done by modifying the contents of `RESULT' in place."
                               (pyvenv-activate "venv"))))
 
 (leaf vue-mode
-  :doc "TODO: revert buffer しないと補完が効かない"
+  :doc "vue用設定"
   :ensure t
   :mode (("\\.vue\\'" . vue-mode))
   :hook ((vue-mode-hook . lsp))
@@ -1632,6 +1647,7 @@ This is done by modifying the contents of `RESULT' in place."
            #'add-node-modules-path))
 
 (leaf arduino-mode
+  :doc "ino(Arduino)用設定"
   :disabled t
   :custom ((arduino-executable . "arduino_debug")
            (flycheck-arduino-executable . "arduino_debug"))
@@ -1644,6 +1660,7 @@ This is done by modifying the contents of `RESULT' in place."
    'my-arduino-mode-hook))
 
 (leaf *markdown
+  :doc "markdown用設定"
   :custom ((markdown-fontify-code-blocks-natively . t))
   :config (defun markdown-insert-image-from-clipboard ()
             (interactive)
@@ -1687,55 +1704,8 @@ This is done by modifying the contents of `RESULT' in place."
   :ensure t
   :config (exec-path-from-shell-initialize))
 
-;; wsl fullscreen
-(when (and (eq system-type 'gnu/linux)
-           (file-exists-p
-            "/proc/sys/fs/binfmt_misc/WSLInterop"))
-  (defvar frame-wsl-powershell-path nil)
-  (defvar frame-wsl-w32-sys-cmd-path "C:\\\\Users\\\\fj\\\\work\\\\w32_wm_syscmd.ps1")
-  (defvar frame-wsl-wm-name "vcxsrv")
-  ;; Toggle flag. Do not touch this.
-  (setq frame-wsl-maximize nil)
-  (defun frame-maximized-wsl (maximize)
-    "If MAXIMIZE is not nil, frame maximize, or frame restore
-This function works only with the Windows Subsystem for Linux.
-And, use powershell script for win32api::SendMessage().
-
-You can customize these variables for your enviroment.
-`frame-wsl-powershell-path' Path to powershell.exe. Maybe not need.
-`frame-wsl-w32-sys-cmd-path' Path to powershell script (w32_wm_syscmd.ps1).
-`frame-wsl-wm-name' Process name (e.g. vcxsrv) to get window handle.
-"
-    (let ((powershell (or frame-wsl-powershell-path
-                          "powershell.exe"))
-          (powershell-opt "-ExecutionPolicy RemoteSigned -File")
-          (w32-wm-syscmd (or frame-wsl-w32-sys-cmd-path
-                             "w32_wm_syscmd.ps1"))
-          (w32-wm-syscmd-arg1 (if maximize
-                                  "maximize"
-                                "restore"))
-          (w32-wm-syscmd-arg2 (or frame-wsl-wm-name "")))
-      (setq frame-wsl-maximize
-            maximize)
-      (shell-command
-       (format
-        "%s %s %s %s %s"
-        powershell
-        powershell-opt
-        w32-wm-syscmd
-        w32-wm-syscmd-arg1
-        w32-wm-syscmd-arg2))))
-  (defun toggle-frame-maximized-advice (orig-func &rest args)
-    (if frame-wsl-maximize
-        (frame-maximized-wsl nil)
-      (frame-maximized-wsl t)))
-  ;; override toggle-frame-maximized
-  (advice-add
-   'toggle-frame-maximized
-   :around 'toggle-frame-maximized-advice))
-
 (leaf *which-func
-  ;; 関数名表示 lsp-modeでは使わない
+  :doc "関数名表示 lsp-modeでは使わない"
   :config (which-function-mode)
   (setq which-func-header-line-format
         '(which-func-mode
@@ -1758,31 +1728,32 @@ You can customize these variables for your enviroment.
      "add kill ring: %s"
      (which-function))))
 
-;; mozcの設定 Linux環境のみ
-(when (and (eq system-type 'gnu/linux)
-           (file-exists-p
-            "/proc/sys/fs/binfmt_misc/WSLInterop"))
-  (setq default-input-method
-        "japanese-mozc")
-  (setq mozc-leim-title "あ")
-  (global-set-key
-   (kbd "<zenkaku-hankaku>")
-   'toggle-input-method)
-  (require 'mozc-popup)
-  (setq mozc-candidate-style
-        'popup)
-  (set-face-background
-   'mozc-cand-overlay-description-face
-   "steel blue")
-  (set-face-background
-   'mozc-cand-overlay-even-face
-   "steel blue")
-  (set-face-background
-   'mozc-cand-overlay-odd-face
-   "steel blue")
-  (set-face-background
-   'mozc-cand-overlay-footer-face
-   "steel blue"))
+(leaf mozc
+  :doc "mozcの設定 Linux環境のみ"
+  :config (when (and (eq system-type 'gnu/linux)
+                     (file-exists-p
+                      "/proc/sys/fs/binfmt_misc/WSLInterop"))
+            (setq default-input-method
+                  "japanese-mozc")
+            (setq mozc-leim-title "あ")
+            (global-set-key
+             (kbd "<zenkaku-hankaku>")
+             'toggle-input-method)
+            (require 'mozc-popup)
+            (setq mozc-candidate-style
+                  'popup)
+            (set-face-background
+             'mozc-cand-overlay-description-face
+             "steel blue")
+            (set-face-background
+             'mozc-cand-overlay-even-face
+             "steel blue")
+            (set-face-background
+             'mozc-cand-overlay-odd-face
+             "steel blue")
+            (set-face-background
+             'mozc-cand-overlay-footer-face
+             "steel blue")))
 
 (leaf *window-t
   :doc "window切替関数の定義とkey-mapの設定"
@@ -1804,8 +1775,6 @@ You can customize these variables for your enviroment.
     :init-value t
     :lighter "window-t")
   (window-t-minor-mode 1))
-
-
 
 (leaf *titlebar
   :doc "タイトルバーに時計などを表示"
@@ -1845,6 +1814,7 @@ You can customize these variables for your enviroment.
                     battery-mode-line-string))))
 
 (leaf nxml-mode
+  :doc "xml, xaml用設定"
   :mode "\\.xaml\\'"
   :bind ((nxml-mode-map
           ("C-c C-o" . hs-toggle-hiding))
@@ -1902,6 +1872,7 @@ You can customize these variables for your enviroment.
    'eq))
 
 (leaf *ivy
+  :doc "emacsコマンド補完パッケージ"
   :config (leaf
             ivy
             :ensure t
@@ -2023,6 +1994,7 @@ You can customize these variables for your enviroment.
        command))))
 
 (leaf google-translate
+  :doc "Google翻訳パッケージ"
   :ensure t
   :bind (("C-x t" . google-translate-enja-or-jaen))
   :config (defvar google-translate-english-chars "[:ascii:]’“”–"
@@ -2221,12 +2193,8 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
        encoded-url
        (not arg)))))
 
-(when (eq system-type 'darwin)
-  ;; enable bash
-  (setq shell-file-name
-        "/bin/bash"))
-
 (leaf *ediff
+  :doc "ediff で水平2分割で表示し、制御用のframeを生成させない"
   :custom ((ediff-window-setup-function . 'ediff-setup-windows-plain)
            (ediff-split-window-function . 'split-window-horizontally)
            (ediff-current-diff-overlay-A . t)
@@ -2247,6 +2215,7 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
            (ediff-split-window-function . 'split-window-horizontally)))
 
 (leaf *pulse-line
+  :doc "windowを切り替えた時などに現在の行をハイライトする"
   :custom ((pulse-iterations . 1))
   :config (defun pulse-line (&rest _)
             "Pulse the current line."
@@ -2305,6 +2274,7 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
             (setq tab-width 2)))
 
 (leaf *shell
+  :doc "M-x shell で新しいバッファを作るようにadvice"
   :preface (defun shell-advice (org-func &rest args)
              (funcall
               org-func
@@ -2313,6 +2283,7 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   :advice (:around shell shell-advice))
 
 (leaf tr-ime
+  :doc "NTEmacsでIMEの自動ON/OFFするためのパッケージ"
   :if (eq system-type 'windows-nt)
   :ensure t
   :custom ((default-input-method . "W32-IME")
