@@ -1817,13 +1817,20 @@ This is done by modifying the contents of `RESULT' in place."
                                 (pyvenv-activate "venv")))))
 
 (leaf go-mode
+  :doc "Go言語用設定 lsp-server: go install golang.org/x/tools/gopls@latest"
   :ensure t
-  :hook ((go-mode-hook . my-go-mode-hook))
-  :config (defun my-go-mode-hook ()
-            (add-hook
-             'before-save-hook
-             'gofmt-before-save)
-            (setq tab-width 2)))
+  :hook ((go-mode-hook . setup-go-auto-fix)
+         (go-mode-hook . lsp))
+  :custom ((tab-width . 2))
+  :config
+  (defun setup-go-auto-fix ()
+    (setq-local
+     auto-fix-command
+     "gofmt")
+    (setq-local
+     auto-fix-option
+     "-w")
+    (auto-fix-mode 1)))
 
 (leaf *cpp
   :doc "C++用設定"
