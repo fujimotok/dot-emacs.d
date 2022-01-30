@@ -2086,7 +2086,17 @@ This is done by modifying the contents of `RESULT' in place."
            (ediff-current-diff-overlay-A . t)
            (ediff-current-diff-overlay-B . t)))
 
-(leaf magit :ensure t)
+(leaf *vc-dir
+  :doc "vc-dirでunregisteredをデフォルトで非表示にするadvice"
+  :config (defun vc-dir-advice (&rest args)
+             (vc-dir-hide-state 'unregistered))
+  :advice (:after vc--process-sentinel vc-dir-advice))
+
+(leaf magit
+  :doc "magit statusでstash,untrackedセクションの非表示を設定"
+  :ensure t
+  :custom ((magit-section-initial-visibility-alist . '((stashes . hide)
+                                                       (untracked . hide)))))
 
 (leaf migemo
   :doc "検索の際に日本語をローマ字読みでヒットさせるパッケージ"
