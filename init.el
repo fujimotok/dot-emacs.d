@@ -1779,6 +1779,20 @@ This is done by modifying the contents of `RESULT' in place."
            'vue-mode-hook
            #'add-node-modules-path))
 
+(leaf json-mode
+  :ensure t
+  :hook ((json-mode-hook . flycheck-mode)
+         (json-mode-hook . setup-json-auto-fix))
+  :config
+  (defun setup-json-auto-fix ()
+    (setq-local
+     auto-fix-command
+     "jsonlint")
+    (setq-local
+     auto-fix-option
+     "-i")
+    (auto-fix-mode 1)))
+
 (leaf *python-mode
   :doc "python用設定"
   :hook (python-mode-hook . (lambda ()
@@ -1902,6 +1916,15 @@ This is done by modifying the contents of `RESULT' in place."
 (leaf crowi
   :el-get hirocarma/emacs-crowi)
 
+(leaf auto-fix
+  :el-get "tomoya/auto-fix.el"
+  :hook ((auto-fix-mode-hook . setup-auto-fix))
+  :config
+  (defun setup-auto-fix ()
+    (add-hook
+     'before-save-hook
+     #'auto-fix-before-save)))
+
 ;;; Utilities
 (leaf hideshow
   :doc "折り畳み機能のパッケージ"
@@ -1917,7 +1940,7 @@ This is done by modifying the contents of `RESULT' in place."
 
 (leaf *shell
   :doc "M-x shell で新しいバッファを作るようにadvice"
-  :preface (defun shell-advice (org-func &rest args)
+  :config (defun shell-advice (org-func &rest args)
              (funcall
               org-func
               (generate-new-buffer-name
