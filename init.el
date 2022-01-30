@@ -1780,6 +1780,7 @@ This is done by modifying the contents of `RESULT' in place."
            #'add-node-modules-path))
 
 (leaf json-mode
+  :doc "Json用設定 linter: npm i jsonlint"
   :ensure t
   :hook ((json-mode-hook . flycheck-mode)
          (json-mode-hook . setup-json-auto-fix))
