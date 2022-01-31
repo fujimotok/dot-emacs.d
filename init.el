@@ -1755,23 +1755,30 @@ This is done by modifying the contents of `RESULT' in place."
   :doc "vue用設定"
   :ensure t
   :mode (("\\.vue\\'" . vue-mode))
-  :hook ((vue-mode-hook . lsp))
+  :hook ((vue-mode-hook . setup-vue-auto-fix)
+         (vue-mode-hook . lsp))
   :custom ((js-indent-level . 2))
-  :config (defun eslint-fix-file ()
-            (interactive)
-            (message
-             "eslint --fix %s"
-             (buffer-name))
-            (call-process
-             "eslint"
-             nil
-             nil
-             nil
-             "--fix"
-             (buffer-file-name))
-            (message
-             "eslint --fix complete")
-            (revert-buffer t t nil)))
+  :advice (:around flycheck-buffer flycheck-vue-advice)
+  :config
+  (defun flycheck-vue-advice (org-func)
+    "vue-mode(mmm-mode)でflycheckを各セクションで実行すると
+実行しているセクションのmajor-modeのchekcerが発動するので
+major-modeを一時的に親であるvue-modeに設定して、完了後戻す暫定対応
+恒久対策はflycheck-may-use-checkerにmmm-modeやpolymodeの時に
+親モードを参照する機能の追加+カスタム可能にする"
+    (let ((backup-major-mode major-mode))
+      (setq major-mode 'vue-mode)
+      (funcall org-func)
+      (setq major-mode
+            backup-major-mode)))
+  (defun setup-vue-auto-fix ()
+    (setq-local
+     auto-fix-command
+     "eslint")
+    (setq-local
+     auto-fix-option
+     "--fix")
+    (auto-fix-mode 1)))
 
 (leaf add-node-modules-path
   :ensure t
