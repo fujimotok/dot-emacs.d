@@ -989,36 +989,44 @@ mouse-1: Display Line and Column Mode Menu"
 
 (leaf *markdown
   :doc "markdown用設定"
-  :custom ((markdown-fontify-code-blocks-natively . t))
-  :config (defun markdown-insert-image-from-clipboard ()
-            (interactive)
-            (let ((filepath))
-              (if (eq 1
-                      (call-process-shell-command
-                       (format
-                        "%s %s %s"
-                        "powershell.exe"
-                        "-Command"
-                        "$clip = Get-Clipboard -Format Image; if ($null -eq $clip) {exit 1}")
-                       nil))
-                  (message
-                   "no image on a clipboard")
-                (setq filepath
-                      (read-file-name
-                       "Save file path: "))
-                (call-process-shell-command
-                 (format
-                  "%s %s %s'%s'%s"
-                  "powershell.exe"
-                  "-Command"
-                  "$clip = Get-Clipboard -Format Image; if ($null -ne $clip) { $clip.Save("
-                  filepath
-                  ") }")
-                 (insert
-                  (format
-                   "![](%s)"
-                   (file-relative-name filepath)))
-                 (markdown-display-inline-images)))))
+  :custom ((markdown-fontify-code-blocks-natively . t)
+           (markdown-code-lang-modes . '(("elisp" . emacs-lisp-mode)
+                                         ("sqlite" . sql-mode)
+                                         ("c" . c-mode)
+                                         ("cpp" . c++-mode)
+                                         ("js" . javascript-mode)
+                                         ("json" . json-mode)
+                                         ("shell" . sh-mode))))
+  :config
+  (defun markdown-insert-image-from-clipboard ()
+    (interactive)
+    (let ((filepath))
+      (if (eq 1
+              (call-process-shell-command
+               (format
+                "%s %s %s"
+                "powershell.exe"
+                "-Command"
+                "$clip = Get-Clipboard -Format Image; if ($null -eq $clip) {exit 1}")
+               nil))
+          (message
+           "no image on a clipboard")
+        (setq filepath
+              (read-file-name
+               "Save file path: "))
+        (call-process-shell-command
+         (format
+          "%s %s %s'%s'%s"
+          "powershell.exe"
+          "-Command"
+          "$clip = Get-Clipboard -Format Image; if ($null -ne $clip) { $clip.Save("
+          filepath
+          ") }")
+         (insert
+          (format
+           "![](%s)"
+           (file-relative-name filepath)))
+         (markdown-display-inline-images)))))
   (add-hook
    'markdown-mode-hook
    (lambda nil
