@@ -1794,6 +1794,23 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
            'vue-mode-hook
            #'add-node-modules-path))
 
+(leaf js2-mode
+  :doc "javascript用設定 linter: npm i eslint"
+  :ensure t
+  :mode (("\\.js\\'" . js2-mode))
+  :hook ((js2-mode-hook . flycheck-mode)
+         (js2-mode-hook . setup-js-auto-fix))
+  :config
+  (defun setup-js-auto-fix ()
+    (setq-local
+     auto-fix-command
+     "eslint")
+    (setq-local
+     auto-fix-option
+     "--fix")
+    (auto-fix-mode 1)))
+
+
 (leaf json-mode
   :doc "Json用設定 linter: npm i jsonlint"
   :ensure t
