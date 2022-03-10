@@ -987,9 +987,13 @@ mouse-1: Display Line and Column Mode Menu"
   :ensure t
   :hook ((emacs-lisp-mode-hook . lispy-mode)))
 
-(leaf *markdown
+(leaf markdown-mode
   :doc "markdown用設定"
+  :hook ((markdown-mode-hook . (lambda nil (outline-hide-sublevels 1))))
+  :bind ((markdown-mode-map
+          ("C-<return>" . markdown-insert-dwin)))
   :custom ((markdown-fontify-code-blocks-natively . t)
+           (markdown-asymmetric-header . t)
            (markdown-code-lang-modes . '(("elisp" . emacs-lisp-mode)
                                          ("sqlite" . sql-mode)
                                          ("c" . c-mode)
@@ -1027,10 +1031,14 @@ mouse-1: Display Line and Column Mode Menu"
            "![](%s)"
            (file-relative-name filepath)))
          (markdown-display-inline-images)))))
-  (add-hook
-   'markdown-mode-hook
-   (lambda nil
-     (outline-hide-sublevels 1))))
+  (defun markdown-insert-dwin (&optional arg)
+    (interactive "p")
+    (let ((l (thing-at-point 'line)))
+      (if (string-match "^[ \t]*[-]" l)
+          (markdown-insert-list-item arg)
+        (move-end-of-line 1)
+        (markdown-insert-header-dwim)
+        ))))
 
 (leaf *csharp
   :doc "C#用設定"
@@ -2161,6 +2169,11 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
   :config (with-eval-after-load
               'ssh
             (shell-dirtrack-mode t)))
+
+(leaf search-web
+  :el-get tomoya/search-web.el
+  :config
+  (require 'search-web))
 
 (leaf google-translate
   :doc "Google翻訳パッケージ"
