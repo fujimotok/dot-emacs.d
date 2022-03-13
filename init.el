@@ -2367,4 +2367,11 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
        encoded-url
        (not arg)))))
 
+(leaf eaf
+  :el-get emacs-eaf/emacs-application-framework
+  :config
+  (require 'eaf)
+  (require 'eaf-browser)
+  (require 'eaf-pdf-viewer))
+
 ;;; init.el ends here
