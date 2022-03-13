@@ -2372,6 +2372,11 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   :config
   (require 'eaf)
   (require 'eaf-browser)
-  (require 'eaf-pdf-viewer))
+  (require 'eaf-pdf-viewer)
+  (require 'eaf-terminal)
+  (defun search-eaf-browser (word)
+    (interactive "sSearch-word: ")
+    (eaf-open-browser (format "http://www.google.com/search?q=%s" (url-hexify-string word))))
+  (eaf-bind-key nil "C-t" eaf-browser-keybinding))
 
 ;;; init.el ends here
