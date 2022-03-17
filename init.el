@@ -739,7 +739,8 @@ mouse-1: Display Line and Column Mode Menu"
 (leaf company
   :doc "補完機能パッケージ"
   :ensure t
-  :bind (("<tab>" . company-indent-or-complete-common)
+  :bind ((company-mode-map
+          ("<tab>" . company-indent-or-complete-common))
          (company-active-map
           ("C-n" . company-select-next))
          (company-active-map
@@ -2374,6 +2375,7 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
   (require 'eaf-browser)
   (require 'eaf-pdf-viewer)
   (require 'eaf-terminal)
+  (add-hook 'eaf-mode-hook '(lambda () (company-mode -1)))
   (defun search-eaf-browser (word)
     (interactive "sSearch-word: ")
     (eaf-open-browser (format "http://www.google.com/search?q=%s" (url-hexify-string word))))
