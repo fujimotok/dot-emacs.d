@@ -117,6 +117,8 @@ active region is added to the search string."
    indent-tabs-mode
    nil)
   (setq-default truncate-lines t)
+  (recentf-mode t)
+  (savehist-mode)
   ;; 行末折り返ししない
   (electric-pair-mode)
   ;;
@@ -613,127 +615,45 @@ mouse-1: Display Line and Column Mode Menu"
      "add kill ring: %s"
      (which-function))))
 
-(leaf *ivy
+(leaf *vertico
   :doc "emacsコマンド補完パッケージ"
-  :config (leaf
-            ivy
-            :ensure t
-            :bind ((ivy-minibuffer-map
-                    ("<escape>" . minibuffer-keyboard-quit)))
-            :custom ((ivy-use-virtual-buffers . t)
-                     (ivy-tab-space . t)
-                     (ivy-height-alist . '((t
-                                            lambda (_caller)
-                                            (/ (frame-height) 3)))))
-            :config (when (setq enable-recursive-minibuffers
-                                t)
-                      (minibuffer-depth-indicate-mode
-                       1))
-            (setcdr
-             (assq t
-                   ivy-format-functions-alist)
-             #'ivy-format-function-line)
-            (ivy-mode 1))
-  (leaf ivy-hydra :ensure t)
-  (leaf
-    counsel
+  :config
+  (leaf orderless
     :ensure t
-    :init (defun ivy-with-thing-at-point (cmd)
-            (let ((ivy-initial-inputs-alist (list
-                                             (cons cmd
-                                                   (thing-at-point 'symbol)))))
-              (funcall cmd)))
-    (defun counsel-rg-thing-at-point ()
+    :custom ((completion-styles . '(orderless))))
+  (leaf vertico
+    :ensure t
+    :bind ((vertico-map
+            ("C-l" . my-filename-upto-parent)))
+    :init
+    (defun my-filename-upto-parent ()
+      "Move to parent directory like \"cd ..\" in find-file."
       (interactive)
-      (ivy-with-thing-at-point
-       'counsel-rg))
-    ;; directory を指定して ag やり直し．クエリは再利用する
-    (defun my-counsel-rg-in-dir (_arg)
-      "Search again with new root directory."
-      (let ((current-prefix-arg '(4)))
-        (counsel-rg ivy-text nil "")))
-    ;; also disable extra-ag-args
-    (defun counsel-bookmark-thing-at-point ()
-      (interactive)
-      (let ((ivy-initial-inputs-alist (list
-                                       (cons 'counsel-bookmark
-                                             (format
-                                              "%s:%d\t::%s\t::%s"
-                                              (buffer-name)
-                                              (line-number-at-pos)
-                                              (which-function)
-                                              (thing-at-point 'line))))))
-        (counsel-bookmark)))
-    (defun counsel-up-directory-or-delete ()
-      (interactive)
-      (if ivy--directory
-          (counsel-up-directory)
-        (ivy-kill-line)))
-    (defun my-ivy--directory-enter (&optional arg)
-      (interactive "p")
-      (ivy-insert-current)
-      (let (dir)
-        (if (and (> ivy--length 0)
-                 (not (string=
-                       (ivy-state-current ivy-last)
-                       "./"))
-                 (setq dir
-                       (ivy-expand-file-if-directory
-                        (ivy-state-current ivy-last))))
-            (progn
-              (ivy--cd dir)
-              (ivy--exhibit))
-          (ivy-insert-current))))
-    :bind (("M-x" . counsel-M-x)
-           ;;("C-M-z" . counsel-fzf)
-           ("C-M-r" . counsel-recentf)
-           ;;("C-x C-b" . counsel-ibuffer)
-           ("C-c i" . counsel-imenu)
-           ("C-x b" . ivy-switch-buffer)
-           ("C-M-f" . counsel-rg-thing-at-point)
-           ("M-y" . counsel-yank-pop)
-           ("C-x C-f" . counsel-find-file)
-           ("C-x C-b" . counsel-bookmark-thing-at-point)
-           (ivy-minibuffer-map
-            ("C-l" . counsel-up-directory-or-delete))
-           (ivy-minibuffer-map
-            ("<tab>" . my-ivy--directory-enter))
-           (counsel-find-file-map
-            ("C-l" . counsel-up-directory))
-           (counsel-find-file-map
-            ("<tab>" . my-ivy--directory-enter)))
-    :setq ((ivy-on-del-error-function
-            function
-            ignore)
-           (ivy-initial-inputs-alist . nil))
-    :config (setq counsel-find-file-ignore-regexp
-                  (regexp-opt '("./" "../")))
-    (ivy-add-actions
-     'counsel-rg
-     '(("r"
-        my-counsel-rg-in-dir
-        "search in directory")))
-    (counsel-mode 1))
-  (leaf
-    swiper
+      (let ((sep (eval-when-compile (regexp-opt '("/" "\\")))))
+        (save-excursion
+          (left-char 1)
+          (when (looking-at-p sep)
+            (delete-char 1)))
+        (save-match-data
+          (when (search-backward-regexp sep nil t)
+            (right-char 1)
+            (filter-buffer-substring (point)
+                                     (save-excursion (end-of-line) (point))
+                                     #'delete)))))
+    (vertico-mode))
+  (leaf consult
     :ensure t
-    :bind (("M-s s" . swiper-thing-at-point)
-           (isearch-mode-map
-            ("C-i" . swiper-from-isearch))))
-  (leaf
-    ivy-rich
+    :bind (("C-c i" . consult-imenu)
+           ("C-x b" . consult-buffer)
+           ("M-y" . consult-yank-pop)
+           ("C-S-s" . consult-line)
+           ("C-S-r" . consult-ripgrep)
+           ("M-g g" . consult-goto-line)))
+  (leaf embark
     :ensure t
-    :config (ivy-rich-mode 1))
-  (leaf
-    all-the-icons-ivy
-    :ensure t
-    :config (all-the-icons-ivy-setup)
-    (dolist (command
-             '(counsel-projectile-switch-project
-               counsel-ibuffer))
-      (add-to-list
-       'all-the-icons-ivy-buffer-commands
-       command))))
+    :bind (("M-a". embark-act))
+    :custom ((embark-indicators . '(embark-minimal-indicator embark-highlight-indicator))))
+  )
 
 ;;; Programming langages settings
 (leaf company
