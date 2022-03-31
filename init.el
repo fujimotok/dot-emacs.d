@@ -1705,10 +1705,12 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
 恒久対策はflycheck-may-use-checkerにmmm-modeやpolymodeの時に
 親モードを参照する機能の追加+カスタム可能にする"
     (let ((backup-major-mode major-mode))
-      (setq major-mode 'vue-mode)
-      (funcall org-func)
-      (setq major-mode
-            backup-major-mode)))
+      (if (not (string= (file-name-extension buffer-file-name) "vue"))
+          (funcall org-func)
+        (setq major-mode 'vue-mode)
+        (funcall org-func)
+        (setq major-mode
+              backup-major-mode))))
   (defun setup-vue-auto-fix ()
     (setq-local
      auto-fix-command
