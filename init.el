@@ -774,42 +774,16 @@ mouse-1: Display Line and Column Mode Menu"
    (lsp-enable-snippet . nil)
    ;; general
    (lsp-auto-guess-root . nil)
-   ;;(lsp-document-sync-method . 'incremental) ;; always send incremental document
    (lsp-document-sync-method . 2)
    (lsp-response-timeout . 5)
    (read-process-output-max . 10485760))
   :bind ((lsp-mode-map
           ("C-c C-r" . lsp-rename)))
-  :config ;; if you are adding the support for your language server in separate repo use
-  ;; (add-to-list 'lsp-language-id-configuration '(python-mode . "python"))
-  ;; (lsp-register-client
-  ;;  (make-lsp-client :new-connection (lsp-stdio-connection "pyright")
-  ;;                   :major-modes '(python-mode)
-  ;;                   :server-id 'pyright))
-  ;; (add-to-list 'lsp-language-id-configuration '(csharp-mode . "csharp"))
-  ;;  (lsp-register-client
-  ;;   (make-lsp-client :new-connection (lsp-stdio-connection '(".cache/lsp/omnisharp-roslyn/v1.37.0/OmniSharp.exe" "-lsp"))
-  ;;                    :major-modes '(csharp-mode)
-  ;;                    :server-id 'omnisharp))
-  ;; (add-to-list
-  ;;  'lsp-language-id-configuration
-  ;;  '(web-mode . "web"))
-  ;; (lsp-register-client
-  ;;  (make-lsp-client
-  ;;   :new-connection (lsp-stdio-connection '("vls"))
-  ;;   :major-modes '(web-mode)
-  ;;   :server-id 'vls))
-  ;; パンくずリスト。hookでdisableされるのを防ぐ
-  (lsp-headerline-breadcrumb-mode
-   1)
-  (remove-hook
-   'lsp-unconfigure-hook
-   #'lsp-headerline--disable-breadcrumb
-   t)
-  ;; LSP UI tools
+  :config
   (leaf
     lsp-ui
     :ensure t
+    :doc "LSP UI tools"
     :custom ;; lsp-ui-doc
     ((lsp-ui-doc-enable . nil)
      (lsp-ui-doc-header . t)
