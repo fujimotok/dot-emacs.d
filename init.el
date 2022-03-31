@@ -643,6 +643,7 @@ mouse-1: Display Line and Column Mode Menu"
     (vertico-mode))
   (leaf consult
     :ensure t
+    :custom ((consult-preview-key . nil))
     :bind (("C-c i" . consult-imenu)
            ("C-x b" . consult-buffer)
            ("M-y" . consult-yank-pop)
