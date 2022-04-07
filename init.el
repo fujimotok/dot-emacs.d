@@ -648,8 +648,12 @@ mouse-1: Display Line and Column Mode Menu"
            ("C-x b" . consult-buffer)
            ("M-y" . consult-yank-pop)
            ("C-S-s" . consult-line)
-           ("C-S-r" . consult-ripgrep)
-           ("M-g g" . consult-goto-line)))
+           ("C-S-r" . my-consult-ripgrep)
+           ("M-g g" . consult-goto-line))
+    :init
+    (defun my-consult-ripgrep (dir)
+        (interactive "Drgrep dir: ")
+        (consult-ripgrep dir)))
   (leaf embark
     :ensure t
     :bind (("M-a". embark-act))
