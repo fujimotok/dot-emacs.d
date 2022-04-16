@@ -1635,4 +1635,7 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
 
 (leaf cider
   :ensure t)
+
+(leaf atomic-chrome
+  :ensure t)
 ;;; init.el ends here
