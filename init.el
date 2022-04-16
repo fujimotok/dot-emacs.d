@@ -1633,4 +1633,6 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
     (eaf-open-browser (format "http://www.google.com/search?q=%s" (url-hexify-string word))))
   (eaf-bind-key nil "C-t" eaf-browser-keybinding))
 
+(leaf cider
+  :ensure t)
 ;;; init.el ends here
