@@ -902,6 +902,20 @@ mouse-1: Display Line and Column Mode Menu"
                                          ("json" . json-mode)
                                          ("shell" . sh-mode))))
   :config
+  (defun markdown-yank-url ()
+    (interactive)
+    (if (string-match ".*\\(https:\\/\\/.*\\/\\).*" (current-kill 0))
+        (let  ((buffer (url-retrieve-synchronously (current-kill 0) nil nil 3))
+               str)
+          (save-excursion
+            (set-buffer buffer)
+            (goto-char (point-min))
+            (setq str (decode-coding-string
+                       (buffer-substring-no-properties (point) (point-max))
+                       'utf-8-unix))
+            (string-match "<title>\\(.+\\)</title>" str))
+          (insert (format "[%s](%s)" (match-string 1 str) (current-kill 0))))
+      (message "No url in kill-ring.")))
   (defun markdown-insert-image-from-clipboard ()
     (interactive)
     (let ((filepath))
