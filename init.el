@@ -1085,6 +1085,22 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
      "--fix")
     (auto-fix-mode 1)))
 
+(leaf typescript-mode
+  :doc "tipescript用設定 linter: npm i eslint"
+  :ensure t
+  :hook ((typescript-mode-hook . lsp)
+         (typescript-mode-hook . flycheck-mode)
+         (typescript-mode-hook . setup-js-auto-fix))
+  :custom ((typescript-indent-level . 2))
+  :config
+  (defun setup-js-auto-fix ()
+    (setq-local
+     auto-fix-command
+     "eslint")
+    (setq-local
+     auto-fix-option
+     "--fix")
+    (auto-fix-mode 1)))
 
 (leaf json-mode
   :doc "Json用設定 linter: npm i jsonlint"
