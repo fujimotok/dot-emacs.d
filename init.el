@@ -1119,12 +1119,19 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
 
 (leaf *python-mode
   :doc "python用設定"
-  :hook (python-mode-hook . (lambda ()
-                              (local-set-key
-                               (kbd "<f5>")
-                               'my-pdb)
-                              (lsp)))
+  :hook (python-mode-hook . my-python-mode-hook)
   :preface
+  (defun my-python-mode-hook ()
+    (local-set-key (kbd "<f5>") 'my-pdb)
+    (local-set-key (kbd "C-return") 'my-python-shell-send-line)
+    (local-set-key (kbd "C-x C-e") 'my-python-shell-send-region)
+    (lsp)
+    ;; IPythonが使えるならrun-pythonはipythonを使う
+    (when (executable-find "ipython")
+      (setq python-shell-interpreter
+            "ipython"
+            python-shell-interpreter-args
+            "-i --simple-prompt --InteractiveShell.display_page=True")))
   (defun my-pdb ()
     (interactive)
     (pdb
@@ -1133,8 +1140,7 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
       (buffer-file-name
        (current-buffer)))))
   :config
-  (leaf
-    pyvenv
+  (leaf pyvenv
     :ensure t
     :hook (python-mode-hook . (lambda ()
                                 (pyvenv-mode 1)
