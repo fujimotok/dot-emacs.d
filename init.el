@@ -1123,7 +1123,7 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
   :preface
   (defun my-python-mode-hook ()
     (local-set-key (kbd "<f5>") 'my-pdb)
-    (local-set-key (kbd "C-return") 'my-python-shell-send-line)
+    (local-set-key (kbd "<C-return>") 'my-python-shell-send-line)
     (local-set-key (kbd "C-x C-e") 'my-python-shell-send-region)
     (lsp)
     ;; IPythonが使えるならrun-pythonはipythonを使う
