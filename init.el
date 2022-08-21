@@ -202,6 +202,9 @@ active region is added to the search string."
    '("[sS][vV][nN]" . sjis-dos))
   (add-to-list
    'process-coding-system-alist
+   '("csi" . sjis-dos))
+  (add-to-list
+   'process-coding-system-alist
    '("python" . sjis-dos))
   (add-hook
    'shell-mode-hook
@@ -963,6 +966,10 @@ mouse-1: Display Line and Column Mode Menu"
     :ensure t
     :hook ((csharp-mode-hook . my-csharp-mode-setup)
            (csharp-mode-hook . lsp))
+    :bind ((csharp-mode-map
+            ("C-x C-e" . my-csharp-shell-send-region))
+           (csharp-mode-map
+            ("<C-return>" . my-csharp-shell-send-line)))
     :config 
     (defun my-csharp-mode-setup nil
       (setq indent-tabs-mode nil)
