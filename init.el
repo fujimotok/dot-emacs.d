@@ -885,10 +885,11 @@ mouse-1: Display Line and Column Mode Menu"
   :advice (:around eldoc-message
                    my:shutup-eldoc-message))
 
-(leaf lispy
+(leaf paredit
   :doc "lisp編集時の移動を楽にするパッケージ"
   :ensure t
-  :hook ((emacs-lisp-mode-hook . lispy-mode)))
+  :hook ((emacs-lisp-mode-hook . paredit-mode)
+         (lisp-mode-hook . paredit-mode)))
 
 (leaf markdown-mode
   :doc "markdown用設定"
