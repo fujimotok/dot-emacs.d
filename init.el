@@ -1680,6 +1680,32 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
 (leaf cider
   :ensure t)
 
+(leaf flycheck-clj-kondo
+  :doc "needs clj-kondo https://github.com/clj-kondo/clj-kondo"
+  :ensure t
+  :config
+  (require 'flycheck-clj-kondo)
+  (add-hook 'clojure-mode-hook 'my-clojure-mode-hook)
+  (add-hook 'clojurescript-mode-hook 'my-clojure-mode-hook)
+  (defun my-clojure-mode-hook ()
+    (flycheck-mode))
+  )
+
+(leaf *clojure-mode
+  :doc "needs cljstyle https://github.com/greglook/cljstyle"
+  :config
+  (add-hook 'clojure-mode-hook 'setup-clojure-auto-fix)
+  (add-hook 'clojurescript-mode-hook 'setup-clojure-auto-fix)
+  (defcustom cljstyle-exec-path "cljstyle.jar" "cljstyle executable path.")
+  (defun setup-clojure-auto-fix ()
+    (setq-local
+     auto-fix-command
+     "cljstyle")
+    (setq-local
+     auto-fix-option
+     "fix")
+    (auto-fix-mode 1)))
+
 (leaf atomic-chrome
   :ensure t)
 ;;; init.el ends here
