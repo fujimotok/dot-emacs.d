@@ -893,7 +893,7 @@ mouse-1: Display Line and Column Mode Menu"
 
 (leaf markdown-mode
   :doc "markdown用設定"
-  :hook ((markdown-mode-hook . (lambda nil (outline-hide-sublevels 1))))
+  :hook ((markdown-mode-hook . (lambda nil (outline-hide-sublevels 2))))
   :bind ((markdown-mode-map
           ("C-<return>" . markdown-insert-dwin)))
   :custom ((markdown-fontify-code-blocks-natively . t)
