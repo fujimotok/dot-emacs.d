@@ -1677,20 +1677,6 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
     (eaf-open-browser (format "http://www.google.com/search?q=%s" (url-hexify-string word))))
   (eaf-bind-key nil "C-t" eaf-browser-keybinding))
 
-(leaf cider
-  :ensure t)
-
-(leaf flycheck-clj-kondo
-  :doc "needs clj-kondo https://github.com/clj-kondo/clj-kondo"
-  :ensure t
-  :config
-  (require 'flycheck-clj-kondo)
-  (add-hook 'clojure-mode-hook 'my-clojure-mode-hook)
-  (add-hook 'clojurescript-mode-hook 'my-clojure-mode-hook)
-  (defun my-clojure-mode-hook ()
-    (flycheck-mode))
-  )
-
 (leaf *clojure-mode
   :doc "needs cljstyle https://github.com/greglook/cljstyle"
   :config
@@ -1704,7 +1690,24 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
     (setq-local
      auto-fix-option
      "fix")
-    (auto-fix-mode 1)))
+    (auto-fix-mode 1))
+
+  (leaf cider
+    :ensure t)
+
+  (leaf clj-refactor
+    :ensure t)
+
+  (leaf flycheck-clj-kondo
+    :doc "needs clj-kondo https://github.com/clj-kondo/clj-kondo"
+    :ensure t
+    :config
+    (require 'flycheck-clj-kondo)
+    (add-hook 'clojure-mode-hook 'my-clojure-mode-hook)
+    (add-hook 'clojurescript-mode-hook 'my-clojure-mode-hook)
+    (defun my-clojure-mode-hook ()
+      (flycheck-mode))
+    ))
 
 (leaf atomic-chrome
   :ensure t)
