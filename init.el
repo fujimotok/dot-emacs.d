@@ -1559,6 +1559,7 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
 
 (leaf treesit
   :doc "Emacs biltin tree-sitter. You need to rename tree-sitter-langs/bin/<lang> to libtree-sitter-<lang>, and set PATH env."
-  :require tree-sitter-langs)
+  (leaf tree-sitter-langs
+    :ensure t))
 
 ;;; init.el ends here
