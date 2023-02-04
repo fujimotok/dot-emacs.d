@@ -1433,7 +1433,10 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
   :doc "magit statusでstash,untrackedセクションの非表示を設定"
   :ensure t
   :custom ((magit-section-initial-visibility-alist . '((stashes . hide)
-                                                       (untracked . hide)))))
+                                                       (untracked . hide))))
+  :hook (magit-mode-hook . (lambda ()
+                             (remove-hook 'server-switch-hook 'magit-commit-diff)
+                             (remove-hook 'with-editor-filter-visit-hook 'magit-commit-diff))))
 
 (leaf migemo
   :doc "検索の際に日本語をローマ字読みでヒットさせるパッケージ"
