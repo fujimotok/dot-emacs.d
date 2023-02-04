@@ -1,7 +1,5 @@
-auto-save-list
-url
-tramp
-recentf
-elpa
-.cask
-*~
+*
+*/
+
+!init.el
+!early-init.el
