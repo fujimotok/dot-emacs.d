@@ -1714,4 +1714,9 @@ If setting prefix args (C-u), reuses session(buffer). Normaly session(buffer) cr
 
 (leaf atomic-chrome
   :ensure t)
+
+(leaf treesit
+  :doc "Emacs biltin tree-sitter. You need to rename tree-sitter-langs/bin/<lang> to libtree-sitter-<lang>, and set PATH env."
+  :require tree-sitter-langs)
+
 ;;; init.el ends here
