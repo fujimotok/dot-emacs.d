@@ -1272,7 +1272,10 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
   :custom ((ediff-window-setup-function . 'ediff-setup-windows-plain)
            (ediff-split-window-function . 'split-window-horizontally)
            (ediff-current-diff-overlay-A . t)
-           (ediff-current-diff-overlay-B . t)))
+           (ediff-current-diff-overlay-B . t))
+  :config
+  (leaf diffview
+    :ensure t))
 
 (leaf *vc-dir
   :doc "vc-dirでunregisteredをデフォルトで非表示にするadvice"
