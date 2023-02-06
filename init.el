@@ -62,38 +62,6 @@
 
 (leaf cus-start
   :doc "builtin機能の設定"
-  :init
-  ;; emacs 28.1から入る予定？
-  (defun isearch-forward-thing-at-point ()
-    "Do incremental search forward for the \"thing\" found near point.
-Like ordinary incremental search except that the \"thing\" found at point
-is added to the search string initially.  The \"thing\" is defined by
-`bounds-of-thing-at-point'.  You can customize the variable
-`isearch-forward-thing-at-point' to define a list of symbols to try
-to find a \"thing\" at point.  For example, when the list contains
-the symbol `region' and the region is active, then text from the
-active region is added to the search string."
-    (interactive)
-    (isearch-forward nil 1)
-    (let ((bounds (seq-some
-                   (lambda (thing)
-                     (bounds-of-thing-at-point
-                      thing))
-                   '(region url symbol))))
-      (cond (bounds
-             (when (use-region-p)
-               (deactivate-mark))
-             (when (< (car bounds) (point))
-               (goto-char (car bounds)))
-             (isearch-yank-string
-              (buffer-substring-no-properties
-               (car bounds)
-               (cdr bounds))))
-            (t
-             (setq isearch-error
-                   "No thing at point")
-             (isearch-push-state)
-             (isearch-update)))))
   :bind (([C-wheel-up] . text-scale-increase)
          ([C-wheel-down] . text-scale-decrease)
          ((kbd "C-a") . move-beginning-alt)
@@ -140,57 +108,16 @@ active region is added to the search string."
   (setq kept-old-versions 1)
   (setq delete-old-versions t)
   (setq create-lockfiles nil)
-  (setq-default
-   left-fringe-width
-   20)
-  (set-frame-font
-   "ricty diminished-10.5")
+  (setq-default left-fringe-width 20)
+  (set-frame-font "ricty diminished-10.5")
   (set-face-attribute
    'fringe
    nil
    :background "#2a2c38"
    :foreground "#888882")
-  ;; 画面分割の閾値 画面サイズが変わると更新 縦は分割させない 横は画面幅を分割閾値とすることで2分割までに制限
-  (defun set-split-threshold-when-frame-size-changed (frame)
-    (when (or (/= (window-pixel-width-before-size-change
-                   (frame-root-window frame))
-                  (window-pixel-width
-                   (frame-root-window frame)))
-              (/= (window-pixel-height-before-size-change
-                   (frame-root-window frame))
-                  (window-pixel-height
-                   (frame-root-window frame))))
-      (setq split-height-threshold
-            nil)
-      (setq split-width-threshold
-            nil)))
-  (add-hook
-   'window-size-change-functions
-   'set-split-threshold-when-frame-size-changed)
   (add-hook
    'prog-mode-hook
    #'hs-minor-mode))
-
-(leaf *window-t
-  :doc "window切替関数の定義とkey-mapの設定"
-  :config (defun other-window-or-split ()
-            (interactive)
-            (when (one-window-p)
-              (split-window-horizontally)
-              (pop-to-buffer nil))
-            (unless (window-minibuffer-p nil)
-              (other-window 1)))
-  ;; global-set-keyではほかのモードで上書きされてしまう ex)dired-mode
-  (defvar window-t-minor-mode-map (let ((map (make-sparse-keymap)))
-                                    (define-key map (kbd "C-t")
-                                      'other-window-or-split)
-                                    map)
-    "window-t-minor-mode keymap.")
-  (define-minor-mode window-t-minor-mode
-    "A minor mode that window-t key settings override annoying major modes."
-    :init-value t
-    :lighter "window-t")
-  (window-t-minor-mode 1))
 
 ;;; System depended settings
 (leaf *windows-nt
@@ -269,21 +196,7 @@ active region is added to the search string."
 
 (leaf *mode-line
   :doc "モードラインの設定"
-  :config (leaf
-            nyan-mode
-            :ensure t
-            :custom ((nyan-bar-length . 10))
-            :config (nyan-mode t))
-  (leaf
-    parrot
-    :ensure t
-    :custom :config (parrot-mode t)
-    (add-hook
-     'lsp-after-initialize-hook
-     #'parrot-start-animation)
-    (add-hook
-     'lsp-after-open-hook
-     #'parrot-start-animation))
+  :config
   (leaf
     all-the-icons
     :ensure t
@@ -366,15 +279,6 @@ active region is added to the search string."
          (if (doom-modeline--active)
              'doom-modeline-buffer-file
            'mode-line-inactive)))
-      ;; adviceできないのでdoom-modelene-segments.elからコピーし再定義 inactive時も表示
-      (doom-modeline-def-segment
-        my/parrot
-        "The party parrot animated icon. Requires `parrot-mode' to be enabled."
-        (when (bound-and-true-p parrot-mode)
-          (concat
-           (parrot-create)
-           (doom-modeline-spc)
-           (doom-modeline-spc))))
       (doom-modeline-def-segment
         my/ime
         (concat
@@ -518,8 +422,7 @@ mouse-1: Display Line and Column Mode Menu"
           process
           my/ime
           my/vcs
-          my/buffer-position
-          my/parrot)))
+          my/buffer-position)))
     (doom-modeline-mode t)))
 
 (leaf *titlebar
@@ -562,21 +465,11 @@ mouse-1: Display Line and Column Mode Menu"
 (leaf rainbow-delimiters
   :doc "カッコに色をつけるパッケージ"
   :ensure t
-  :custom-face ((rainbow-delimiters-depth-1-face . `((t (:forground "#9a4040"))))
-                (rainbow-delimiters-depth-2-face . `((t (:forground "#ff5e5e"))))
-                (rainbow-delimiters-depth-3-face . `((t (:forground "#ffaa77"))))
-                (rainbow-delimiters-depth-4-face . `((t (:forground "#dddd77"))))
-                (rainbow-delimiters-depth-5-face . `((t (:forground "#80ee80"))))
-                (rainbow-delimiters-depth-6-face . `((t (:forground "#66bbff"))))
-                (rainbow-delimiters-depth-7-face . `((t (:forground "#da6bda"))))
-                (rainbow-delimiters-depth-8-face . `((t (:forground "#afafaf"))))
-                (rainbow-delimiters-depth-9-face . `((t (:forground "#f0f0f0")))))
   :config (define-globalized-minor-mode
             global-rainbow-delimiters-mode
             rainbow-delimiters-mode
             rainbow-delimiters-mode)
-  (global-rainbow-delimiters-mode
-   t))
+  (global-rainbow-delimiters-mode t))
 
 (leaf *pulse-line
   :doc "windowを切り替えた時などに現在の行をハイライトする"
@@ -593,30 +486,6 @@ mouse-1: Display Line and Column Mode Menu"
     (advice-add
      command
      :after #'pulse-line)))
-
-(leaf *which-func
-  :doc "関数名表示 lsp-modeでは使わない"
-  :config (which-function-mode)
-  (setq which-func-header-line-format
-        '(which-func-mode
-          ("" which-func-format)))
-  (defadvice which-func-ff-hook (after header-line activate)
-    (when (and which-func-mode
-               (not (bound-and-true-p lsp-mode)))
-      (setq header-line-format
-            which-func-header-line-format)))
-  (defun show-file-name ()
-    (interactive)
-    (kill-new (buffer-file-name))
-    (message
-     "add kill ring: %s"
-     (buffer-file-name)))
-  (defun show-func-name ()
-    (interactive)
-    (kill-new (buffer-file-name))
-    (message
-     "add kill ring: %s"
-     (which-function))))
 
 (leaf *vertico
   :doc "emacsコマンド補完パッケージ"
@@ -1244,14 +1113,6 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
    'arduino-mode-hook
    'my-arduino-mode-hook))
 
-(leaf org
-  :bind ((org-mode-map
-          ("C-c M-o" . ace-link-org)))
-  :setq ((org-plantuml-jar-path . "~/.emacs.d/lib/plantuml.jar"))
-  :config (org-babel-do-load-languages
-           'org-babel-load-languages
-           '((plantuml . t))))
-
 (leaf auto-fix
   :el-get "tomoya/auto-fix.el"
   :hook ((auto-fix-mode-hook . setup-auto-fix))
@@ -1559,7 +1420,9 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
 
 (leaf treesit
   :doc "Emacs biltin tree-sitter. You need to rename tree-sitter-langs/bin/<lang> to libtree-sitter-<lang>, and set PATH env."
-  (leaf tree-sitter-langs
-    :ensure t))
+  ;; package install tree-sitter-langs
+  ;; tree-sitter-langs は1回だけインストールしてbinをコピーした後は消す
+  )
+    
 
 ;;; init.el ends here
