@@ -194,273 +194,47 @@
   :ensure t
   :config (load-theme 'doom-dracula t))
 
+(leaf all-the-icons
+  :ensure t
+  :custom ((all-the-icons-scale-factor . 1.0)))
+
 (leaf *mode-line
   :doc "モードラインの設定"
+  :custom
+  ((eol-mnemonic-dos . "↲")
+   (eol-mnemonic-unix . "↓")
+   (eol-mnemonic-mac . "←")
+   (eol-mnemonic-undecided . "・"))
   :config
-  (leaf
-    all-the-icons
-    :ensure t
-    :custom ((all-the-icons-scale-factor . 1.0)))
-  (leaf
-    doom-modeline
-    :ensure t
-    :preface (defun my:doom-modeline-set-x-modelene ()
-               "Do nothing")
-    :custom ((doom-modeline-buffer-file-name-style . 'buffer-name)
-             (doom-modeline-icon . t)
-             (doom-modeline-major-mode-icon . t)
-             (doom-modeline-major-mode-color-icon . t)
-             (doom-modeline-minor-modes . nil)
-             (eol-mnemonic-dos . "↲")
-             (eol-mnemonic-unix . "↓")
-             (eol-mnemonic-mac . "←")
-             (eol-mnemonic-undecided . "・"))
-    :custom-face ((doom-modeline-bar . `((t
-                                          (:background "MediumPurple")))))
-    :advice ;; 余計なmodeline切り替えを無効に
-    ((:override doom-modeline-set-minimal-modeline
-                my:doom-modeline-set-x-modelene)
-     (:override doom-modeline-set-special-modeline
-                my:doom-modeline-set-x-modelene)
-     (:override doom-modeline-set-project-modeline
-                my:doom-modeline-set-x-modelene)
-     (:override doom-modeline-set-vcs-modeline
-                my:doom-modeline-set-x-modelene)
-     (:override doom-modeline-set-info-modeline
-                my:doom-modeline-set-x-modelene)
-     (:override doom-modeline-set-package-modeline
-                my:doom-modeline-set-x-modelene)
-     (:override doom-modeline-set-media-modeline
-                my:doom-modeline-set-x-modelene)
-     (:override doom-modeline-set-message-modeline
-                my:doom-modeline-set-x-modelene)
-     (:override doom-modeline-set-pdf-modeline
-                my:doom-modeline-set-x-modelene)
-     (:override doom-modeline-set-org-src-modeline
-                my:doom-modeline-set-x-modelene)
-     (:override doom-modeline-set-helm-modeline
-                my:doom-modeline-set-x-modelene)
-     (:override doom-modeline-set-timemachine-modeline
-                my:doom-modeline-set-x-modelene))
-    :config (line-number-mode 1)
-    (column-number-mode 1)
-    (with-eval-after-load
-        'doom-modeline
-      ;; def-segment有効になるまで待つ
-      (doom-modeline-def-segment
-        buffer-mule-info
-        (propertize
-         (concat
-          " %z"
-          (mode-line-eol-desc)
-          "%* ")
-         'face
-         (if (doom-modeline--active)
-             `(:background "MediumPurple"
-                           :inherit)
-           'mode-line-inactive)))
-      (doom-modeline-def-segment
-        my/major-mode
-        (concat
-         (doom-modeline-spc)
-         (doom-modeline--buffer-mode-icon)))
-      (doom-modeline-def-segment
-        my/major-mode-name
-        (concat
-         mode-name
-         (doom-modeline-spc)))
-      (doom-modeline-def-segment
-        my/buffer-info
-        (propertize
-         (concat
-          (doom-modeline-spc)
-          (doom-modeline--buffer-name))
-         'face
-         (if (doom-modeline--active)
-             'doom-modeline-buffer-file
-           'mode-line-inactive)))
-      (doom-modeline-def-segment
-        my/ime
-        (concat
-         ""
-         w32-ime-mode-line-state-indicator))
-      (doom-modeline-def-segment
-        my/lsp
-        (when (bound-and-true-p lsp-mode)
-          (if-let
-              (workspaces (lsp-workspaces))
-              (concat
-               (doom-modeline-lsp-icon
-                "lsp:"
-                'success)
-               (string-join
-                (--map
-                 (car (split-string
-                       (format
-                        "%s"
-                        (lsp--workspace-print it))
-                       ":"))
-                 workspaces)))
-            (concat
-             (doom-modeline-lsp-icon
-              "lsp:"
-              'warning)
-             (propertize "!" 'face 'warning)))))
-      (doom-modeline-def-segment
-        my/vcs
-        "Displays the current branch, colored based on its state."
-        (let ((active t))
-          (when-let
-              ((icon doom-modeline--vcs-icon)
-               (text doom-modeline--vcs-text))
-            (concat
-             (doom-modeline-spc)
-             (propertize
-              (concat
-               (if active
-                   icon
-                 (doom-modeline-propertize-icon
-                  icon
-                  'mode-line-inactive))
-               (doom-modeline-vspc))
-              'mouse-face
-              'mode-line-highlight
-              'help-echo
-              (get-text-property
-               1
-               'help-echo
-               vc-mode)
-              'local-map
-              (get-text-property
-               1
-               'local-map
-               vc-mode))
-             (if active
-                 text
-               (propertize
-                text
-                'face
-                'mode-line-inactive))
-             (doom-modeline-spc)))))
-      (doom-modeline-def-segment
-        my/buffer-position
-        "The buffer position information."
-        (let* ((active t)
-               (lc '(line-number-mode
-                     (column-number-mode
-                      (doom-modeline-column-zero-based
-                       "%l:%c"
-                       "%l:%C")
-                      "%l")
-                     (column-number-mode
-                      (doom-modeline-column-zero-based
-                       ":%c"
-                       ":%C"))))
-               (face (if active
-                         'mode-line
-                       'mode-line-inactive))
-               (mouse-face 'mode-line-highlight)
-               (local-map mode-line-column-line-number-mode-map))
-          (concat
-           (doom-modeline-spc)
-           (doom-modeline-spc)
-           (propertize
-            (format-mode-line lc)
-            'face
-            face
-            'help-echo
-            "Buffer position
-\
-mouse-1: Display Line and Column Mode Menu"
-            'mouse-face
-            mouse-face
-            'local-map
-            local-map)
-           (if (and active
-                    (bound-and-true-p nyan-mode)
-                    (>= (window-width)
-                        nyan-minimum-window-width))
-               (concat
-                (doom-modeline-spc)
-                (doom-modeline-spc)
-                (propertize
-                 (nyan-create)
-                 'mouse-face
-                 mouse-face))
-             (when doom-modeline-percent-position
-               (concat
-                (doom-modeline-spc)
-                (propertize
-                 (format-mode-line
-                  '(""
-                    doom-modeline-percent-position
-                    "%%"))
-                 'face
-                 face
-                 'help-echo
-                 "Buffer percentage
-\
-mouse-1: Display Line and Column Mode Menu"
-                 'mouse-face
-                 mouse-face
-                 'local-map
-                 local-map))))
-           (when (or line-number-mode
-                     column-number-mode
-                     doom-modeline-percent-position)
-             (doom-modeline-spc)))))
-      (doom-modeline-def-modeline
-        'main
-        '(bar
-          my/major-mode
-          my/major-mode-name
-          buffer-mule-info
-          my/buffer-info)
-        '(input-method
-          my/lsp
-          checker
-          process
-          my/ime
-          my/vcs
-          my/buffer-position)))
-    (doom-modeline-mode t)))
+  (require 'mode-line)
+  (setq-default mode-line-format
+                `(" "
+                  (:propertize " " display (space . (:width (1) :height (22) :ascent (16))))
+                  (:eval w32-ime-mode-line-state-indicator)
+                  "%Z" ; 文字コード改行コード
+                  "%* " ; 変更有無
+                  mml-mode-name
+                  (:propertize " %b " face (:weight bold))
+                  "(%l:%c) "
+                  mml-branch-icon
+                  vc-mode
+                  " "
+                  ,@mml-checker
+                  ))
+  (set-face-attribute 'mode-line nil :background "#714069"))
+
+
 
 (leaf *titlebar
   :doc "タイトルバーに時計などを表示"
   :config (when (window-system)
-            ;; display-timeより先にsetしておかないとdefaultの書式になる
-            (setq display-time-string-forms
-                  '((format
-                     "%s/%s/%s"
-                     year
-                     month
-                     day)
-                    (format
-                     "(%s:%s)"
-                     24-hours
-                     minutes)))
-            (display-time)
-            ;; display-time-stringの有効化
-            (display-battery-mode 1)
-            (setq battery-mode-line-format
-                  " %b%p%%")
-            (with-eval-after-load
-                'doom-modeline
-              ;; doom-modelineがbattery-mode-line-stringを更新させなくするのでremove
-              (advice-remove
-               'battery-update
-               'doom-modeline-update-battery-status))
             ;; バッファがファイルのときはフルパス、でなければバッファ名表示
-            ;; if(buffer-file-name) の評価がsetq時で終わらないよう:eval
             (setq frame-title-format
-                  '(""
-                    (:eval (if (buffer-file-name)
-                               " %f"
-                             " %b"))
-                    " --- "
-                    display-time-string
-                    " "
-                    battery-mode-line-string))))
+                  '("" (:eval
+                        (if (buffer-file-name)
+                            " %f"
+                          " %b"))
+                    ))))
 
 (leaf rainbow-delimiters
   :doc "カッコに色をつけるパッケージ"
