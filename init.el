@@ -896,6 +896,18 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
      'before-save-hook
      #'auto-fix-before-save)))
 
+(leaf *powershell-mode
+  :doc "powershell用設定"
+  :hook (powershell-mode-hook . my-powershell-mode-hook)
+  :preface
+  (defun my-powershell-mode-hook ()
+    (local-set-key (kbd "<C-return>") 'my-powershell-shell-send-line)
+    (local-set-key (kbd "C-x C-e") 'my-powershell-shell-send-region)
+    (lsp))
+  :config
+  (leaf powershell
+    :ensure t))
+
 ;;; Utilities
 (leaf *hideshow
   :doc "折り畳み機能のパッケージ"
@@ -907,15 +919,6 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
          (sh-mode-hook . hs-minor-mode))
   :bind ((hs-minor-mode-map
           ("C-i" . hs-toggle-hiding))))
-
-(leaf *shell
-  :doc "M-x shell で新しいバッファを作るようにadvice"
-  :config (defun shell-advice (org-func &rest args)
-             (funcall
-              org-func
-              (generate-new-buffer-name
-               "*shell*")))
-  :advice (:around shell shell-advice))
 
 (leaf *dired
   :doc "diredでファイルオープンやディレクトリ移動で新しいバッファ開かない設定など"
