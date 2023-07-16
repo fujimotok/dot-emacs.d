@@ -75,6 +75,7 @@
          ((kbd "C-S-a") . beginning-of-defun)
          ((kbd "C-S-e") . end-of-defun)
          ((kbd "C-<backspace>") . backward-delete-word)
+         ((kbd "C-;") . hs-toggle-hiding)
          ((kbd "C-d") . forward-delete-char)
          ((kbd "C-z") . undo))
   :custom `((scroll-preserve-screen-position . t)
@@ -664,7 +665,6 @@
    'nxml-mode-hook
    '(lambda
       nil
-      (hs-minor-mode 1)
       (setq nxml-child-indent 4)))
   (add-to-list
    'hs-special-modes-alist
@@ -909,17 +909,6 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
     :ensure t))
 
 ;;; Utilities
-(leaf *hideshow
-  :doc "折り畳み機能のパッケージ"
-  :hook ((c-mode-common-hook . hs-minor-mode)
-         (emacs-lisp-mode-hook . hs-minor-mode)
-         (java-mode-hook . hs-minor-mode)
-         (lisp-mode-hook . hs-minor-mode)
-         (parl-mode-hook . hs-minor-mode)
-         (sh-mode-hook . hs-minor-mode))
-  :bind ((hs-minor-mode-map
-          ("C-i" . hs-toggle-hiding))))
-
 (leaf *dired
   :doc "diredでファイルオープンやディレクトリ移動で新しいバッファ開かない設定など"
   :config (leaf
