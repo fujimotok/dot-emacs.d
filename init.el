@@ -533,8 +533,10 @@
   :doc "markdown用設定"
   :hook ((markdown-mode-hook . (lambda nil (outline-hide-sublevels 2))))
   :bind ((markdown-mode-map
-          ("C-<return>" . markdown-insert-dwin)))
-  :custom ((markdown-fontify-code-blocks-natively . t)
+          ("C-<return>" . markdown-insert-dwin)
+          ("S-<return>" . markdown-insert-gfm-checkbox)))
+  :custom ((markdown-unordered-list-item-prefix . "- ")
+           (markdown-fontify-code-blocks-natively . t)
            (markdown-asymmetric-header . t)
            (markdown-code-lang-modes . '(("elisp" . emacs-lisp-mode)
                                          ("sqlite" . sql-mode)
