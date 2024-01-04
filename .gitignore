@@ -3,3 +3,6 @@
 
 !init.el
 !early-init.el
+!native-comp
+!native-comp/*
+!native-comp/*/*

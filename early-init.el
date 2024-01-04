@@ -60,3 +60,6 @@
 (setq initial-scratch-message "")
 (setq inhibit-startup-screen t)
 
+(setq native-comp-driver-options
+      `("-B" ,(expand-file-name "~/.emacs.d/native-comp/lib")))
+ 
