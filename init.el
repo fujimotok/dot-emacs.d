@@ -1194,6 +1194,10 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
   ;; package install tree-sitter-langs
   ;; tree-sitter-langs は1回だけインストールしてbinをコピーした後は消す
   )
-    
+
+(leaf *aichat
+  :doc "bing aiと対話"
+  :el-get xhcoding/emacs-aichat
+  :custom ((aichat-bingai-cookies-file . "~/.emacs.d/aichat-bingai-cookies-file.json")))
 
 ;;; init.el ends here

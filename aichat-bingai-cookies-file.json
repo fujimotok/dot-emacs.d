@@ -1,0 +1,11 @@
+[
+  {
+    "name": "_U",
+    "value": "<VALUE>",
+    "$comment": "PoworShell> (Get-Date '2024/01/01 00:00:00').ToFileTime() / 10000000",
+    "expirationDate": 13331160615,
+    "domain": ".bing.com",
+    "secure": true,
+    "path": "/"
+  }
+]
