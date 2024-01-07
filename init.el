@@ -691,6 +691,8 @@
 ;;; Utilities
 (leaf *dired
   :doc "diredでファイルオープンやディレクトリ移動で新しいバッファ開かない設定など"
+  :custom ((dired-dwim-target . t))
+  :hook ((dired-mode-hook . my-dired-mode-hook))
   :init
   (defun dired-open-in-accordance-with-situation ()
     (interactive)
@@ -698,16 +700,23 @@
       (if (file-directory-p file)
           (dired-find-alternate-file)
         (dired-find-file))))
+  (defun my-dired-mode-hook ()
+        (local-set-key (kbd "<return>")
+                       'dired-open-in-accordance-with-situation)
+        (local-set-key (kbd "/")
+                       'dired-narrow-regexp)
+        (all-the-icons-dired-mode t))
   :config
-  (leaf
-    all-the-icons-dired
-    :ensure t
-    :hook ((dired-mode-hook . (lambda nil
-                                (local-set-key
-                                 (kbd "<return>")
-                                 'dired-open-in-accordance-with-situation)
-                                (all-the-icons-dired-mode t))))))
-  
+  (leaf dired-narrow
+    :doc "絞り込み"
+    :ensure t)
+  (leaf dired-subtree
+    :doc "i でディレクトリを展開"
+    :ensure t)
+  (leaf all-the-icons-dired
+    :doc "アイコン表示"
+    :ensure t)
+  )
 
 (leaf *ediff
   :doc "ediff で水平2分割で表示し、制御用のframeを生成させない"
