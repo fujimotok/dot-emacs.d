@@ -154,41 +154,6 @@
   (tr-ime-standard-install)
   (w32-ime-initialize))
 
-(leaf exec-path-from-shell
-  :doc "MacOS環境でshell以外から起動したときにpathが引き継がれない問題の対策パッケージ"
-  :if (memq
-       window-system
-       '(mac ns x))
-  :ensure t
-  :config (exec-path-from-shell-initialize))
-
-(leaf mozc
-  :doc "mozcの設定 Linux環境のみ"
-  :config (when (and (eq system-type 'gnu/linux)
-                     (file-exists-p
-                      "/proc/sys/fs/binfmt_misc/WSLInterop"))
-            (setq default-input-method
-                  "japanese-mozc")
-            (setq mozc-leim-title "あ")
-            (global-set-key
-             (kbd "<zenkaku-hankaku>")
-             'toggle-input-method)
-            (require 'mozc-popup)
-            (setq mozc-candidate-style
-                  'popup)
-            (set-face-background
-             'mozc-cand-overlay-description-face
-             "steel blue")
-            (set-face-background
-             'mozc-cand-overlay-even-face
-             "steel blue")
-            (set-face-background
-             'mozc-cand-overlay-odd-face
-             "steel blue")
-            (set-face-background
-             'mozc-cand-overlay-footer-face
-             "steel blue")))
-
 ;;; Appearance settings
 (leaf doom-themes
   :doc "doomテーマのロード"
@@ -245,22 +210,6 @@
             rainbow-delimiters-mode
             rainbow-delimiters-mode)
   (global-rainbow-delimiters-mode t))
-
-(leaf *pulse-line
-  :doc "windowを切り替えた時などに現在の行をハイライトする"
-  :custom ((pulse-iterations . 1))
-  :config (defun pulse-line (&rest _)
-            "Pulse the current line."
-            (pulse-momentary-highlight-one-line
-             (point)))
-  (dolist (command
-           '(scroll-up-command
-             scroll-down-command
-             recenter-top-bottom
-             other-window))
-    (advice-add
-     command
-     :after #'pulse-line)))
 
 (leaf *vertico
   :doc "emacsコマンド補完パッケージ"
@@ -679,36 +628,6 @@
    nil
    'eq))
 
-(leaf vue-mode
-  :doc "vue用設定"
-  :ensure t
-  :mode (("\\.vue\\'" . vue-mode))
-  :hook ((vue-mode-hook . setup-vue-auto-fix)
-         (vue-mode-hook . lsp))
-  :custom ((js-indent-level . 2))
-  :advice (:around flycheck-buffer flycheck-vue-advice)
-  :config
-  (defun flycheck-vue-advice (org-func)
-    "vue-mode(mmm-mode)でflycheckを各セクションで実行すると
-実行しているセクションのmajor-modeのchekcerが発動するので
-major-modeを一時的に親であるvue-modeに設定して、完了後戻す暫定対応
-恒久対策はflycheck-may-use-checkerにmmm-modeやpolymodeの時に
-親モードを参照する機能の追加+カスタム可能にする"
-    (let ((backup-major-mode major-mode))
-      (if (not (string= (file-name-extension buffer-file-name) "vue"))
-          (funcall org-func)
-        (setq major-mode 'vue-mode)
-        (funcall org-func)
-        (setq major-mode
-              backup-major-mode))))
-  (defun setup-vue-auto-fix ()
-    (setq-local
-     auto-fix-command
-     "eslint")
-    (setq-local
-     auto-fix-option
-     "--fix")
-    (auto-fix-mode 1)))
 
 (leaf add-node-modules-path
   :ensure t
@@ -1141,18 +1060,6 @@ major-modeを一時的に親であるvue-modeに設定して、完了後戻す�
     "Search TKK."
     (list 430675 2721866130)))
 
-(leaf eaf
-  :el-get emacs-eaf/emacs-application-framework
-  :config
-  (require 'eaf)
-  (require 'eaf-browser)
-  (require 'eaf-pdf-viewer)
-  (require 'eaf-terminal)
-  (add-hook 'eaf-mode-hook '(lambda () (company-mode -1)))
-  (defun search-eaf-browser (word)
-    (interactive "sSearch-word: ")
-    (eaf-open-browser (format "http://www.google.com/search?q=%s" (url-hexify-string word))))
-  (eaf-bind-key nil "C-t" eaf-browser-keybinding))
 
 (leaf *clojure-mode
   :doc "needs cljstyle https://github.com/greglook/cljstyle"
