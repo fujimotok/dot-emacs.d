@@ -41,9 +41,9 @@
         (package-refresh-contents))
       (condition-case err
           (package-install 'leaf)
+        ; renew local melpa cache if fail
         (error
          (package-refresh-contents)
-                                        ; renew local melpa cache if fail
          (package-install 'leaf))))
     (leaf
       leaf-keywords
@@ -65,15 +65,6 @@
   :bind (([C-wheel-up] . text-scale-increase)
          ([C-wheel-down] . text-scale-decrease)
          ((kbd "C-a") . move-beginning-alt)
-         ((kbd "C-s") . isearch-forward-thing-at-point)
-         ((kbd "C-S-f") . forward-to-symbol)
-         ((kbd "C-S-b") . backward-to-symbol)
-         ((kbd "C-S-n") . forward-list)
-         ((kbd "C-S-p") . backward-list)
-         ((kbd "C-S-u") . backward-up-list)
-         ((kbd "C-S-d") . down-list)
-         ((kbd "C-S-a") . beginning-of-defun)
-         ((kbd "C-S-e") . end-of-defun)
          ((kbd "C-<backspace>") . backward-delete-word)
          ((kbd "C-;") . hs-toggle-hiding)
          ((kbd "C-d") . forward-delete-char)
@@ -82,26 +73,20 @@
             (ring-bell-function . 'ignore))
   :config (set-default-coding-systems
            'utf-8-unix)
-  (setq-default
-   indent-tabs-mode
-   nil)
+  (setq-default indent-tabs-mode nil)
   (setq-default truncate-lines t)
   (recentf-mode t)
   (savehist-mode)
-  ;; 行末折り返ししない
   (electric-pair-mode)
-  ;;
-  (global-auto-revert-mode)
   ;; 外部からの変更を自動読み込み
-  (global-hl-line-mode t)
+  (global-auto-revert-mode)
   ;; 現在行をハイライト
-  (show-paren-mode t)
+  (global-hl-line-mode t)
   ;; 対応する括弧をハイライト
-  (setq show-paren-style
-        'expression)
-  ;; 括弧のハイライトの設定。
-  (transient-mark-mode t)
+  (show-paren-mode t)
+  (setq show-paren-style 'expression)
   ;; 選択範囲をハイライト
+  (transient-mark-mode t)
   (setq backup-directory-alist
         '((".*" . "~/.emacs.d/auto-save")))
   (setq version-control t)
@@ -120,6 +105,7 @@
    'prog-mode-hook
    #'hs-minor-mode))
 
+
 ;;; System depended settings
 (leaf *windows-nt
   :doc "Windows環境のみの設定"
@@ -137,7 +123,7 @@
   (add-hook
    'shell-mode-hook
    (lambda ()
-     (set-buffer-process-coding-system
+     (set-process-coding-system
       'sjis-dos
       'sjis-dos))))
 
@@ -153,6 +139,7 @@
            :override (lambda ()))
   (tr-ime-standard-install)
   (w32-ime-initialize))
+
 
 ;;; Appearance settings
 (leaf doom-themes
@@ -189,26 +176,26 @@
                   ))
   (set-face-attribute 'mode-line nil :background "#714069"))
 
-
-
 (leaf *titlebar
   :doc "タイトルバーに時計などを表示"
-  :config (when (window-system)
-            ;; バッファがファイルのときはフルパス、でなければバッファ名表示
-            (setq frame-title-format
-                  '("" (:eval
-                        (if (buffer-file-name)
-                            " %f"
-                          " %b"))
-                    ))))
+  :config
+  (when (window-system)
+    ;; バッファがファイルのときはフルパス、でなければバッファ名表示
+    (setq frame-title-format
+          '("" (:eval
+                (if (buffer-file-name)
+                    " %f"
+                  " %b"))
+            ))))
 
 (leaf rainbow-delimiters
   :doc "カッコに色をつけるパッケージ"
   :ensure t
-  :config (define-globalized-minor-mode
-            global-rainbow-delimiters-mode
-            rainbow-delimiters-mode
-            rainbow-delimiters-mode)
+  :config
+  (define-globalized-minor-mode
+    global-rainbow-delimiters-mode
+    rainbow-delimiters-mode
+    rainbow-delimiters-mode)
   (global-rainbow-delimiters-mode t))
 
 (leaf *vertico
@@ -246,7 +233,7 @@
            ("C-S-s" . consult-line)
            ("C-S-r" . my-consult-ripgrep)
            ("M-g g" . consult-goto-line))
-    :init
+    :config
     (defun my-consult-ripgrep (dir)
         (interactive "Drgrep dir: ")
         (consult-ripgrep dir)))
@@ -495,49 +482,6 @@
                                          ("json" . json-mode)
                                          ("shell" . sh-mode))))
   :config
-  (defun markdown-yank-url ()
-    (interactive)
-    (if (string-match ".*\\(https:\\/\\/.*\\/\\).*" (current-kill 0))
-        (let  ((buffer (url-retrieve-synchronously (current-kill 0) nil nil 3))
-               str)
-          (save-excursion
-            (set-buffer buffer)
-            (goto-char (point-min))
-            (setq str (decode-coding-string
-                       (buffer-substring-no-properties (point) (point-max))
-                       'utf-8-unix))
-            (string-match "<title>\\(.+\\)</title>" str))
-          (insert (format "[%s](%s)" (match-string 1 str) (current-kill 0))))
-      (message "No url in kill-ring.")))
-  (defun markdown-insert-image-from-clipboard ()
-    (interactive)
-    (let ((filepath))
-      (if (eq 1
-              (call-process-shell-command
-               (format
-                "%s %s %s"
-                "powershell.exe"
-                "-Command"
-                "$clip = Get-Clipboard -Format Image; if ($null -eq $clip) {exit 1}")
-               nil))
-          (message
-           "no image on a clipboard")
-        (setq filepath
-              (read-file-name
-               "Save file path: "))
-        (call-process-shell-command
-         (format
-          "%s %s %s'%s'%s"
-          "powershell.exe"
-          "-Command"
-          "$clip = Get-Clipboard -Format Image; if ($null -ne $clip) { $clip.Save("
-          filepath
-          ") }")
-         (insert
-          (format
-           "![](%s)"
-           (file-relative-name filepath)))
-         (markdown-display-inline-images)))))
   (defun markdown-insert-dwin (&optional arg)
     (interactive "p")
     (let ((l (thing-at-point 'line)))
@@ -575,10 +519,8 @@
   :doc "xml, xaml用設定"
   :mode "\\.xaml\\'"
   :bind ((nxml-mode-map
-          ("C-c C-o" . hs-toggle-hiding))
-         (nxml-mode-map
-          ("C-c C-l" . hs-hide-level))
-         (nxml-mode-map
+          ("C-c C-o" . hs-toggle-hiding)
+          ("C-c C-l" . hs-hide-level)
           ("C-c C-a" . hs-show-all)))
   :mode (("\\.xaml\\'" . nxml-mode))
   :config ;; エラー行にマークがつくようにadvice
@@ -614,7 +556,7 @@
         t)
   (add-hook
    'nxml-mode-hook
-   '(lambda
+   #'(lambda
       nil
       (setq nxml-child-indent 4)))
   (add-to-list
@@ -712,89 +654,6 @@
                                 (pyvenv-mode 1)
                                 (pyvenv-activate "venv")))))
 
-(leaf go-mode
-  :doc "Go言語用設定 lsp-server: go install golang.org/x/tools/gopls@latest"
-  :ensure t
-  :hook ((go-mode-hook . setup-go-auto-fix)
-         (go-mode-hook . lsp))
-  :custom ((tab-width . 2))
-  :config
-  (defun setup-go-auto-fix ()
-    (setq-local
-     auto-fix-command
-     "gofmt")
-    (setq-local
-     auto-fix-option
-     "-w")
-    (auto-fix-mode 1)))
-
-(leaf *cpp
-  :doc "C++用設定"
-  :config ;; todo: coding style 4 tab etc...
-  (leaf
-    counsel-gtags
-    :ensure t
-    :config (add-hook
-             'c-mode-hook
-             'counsel-gtags-mode)
-    ;; key bindings
-    (add-hook
-     'counsel-gtags-mode-hook
-     '(lambda
-        ()
-        (local-set-key
-         (kbd "C-j")
-         'counsel-gtags-dwim-ex)
-        (local-set-key
-         (kbd "C-c t")
-         'counsel-gtags-find-definition)
-        (local-set-key
-         (kbd "C-c r")
-         'counsel-gtags-find-reference)
-        (local-set-key
-         (kbd "C-c s")
-         'counsel-gtags-find-symbol)
-        (local-set-key
-         (kbd "C-c h")
-         'counsel-gtags-find-header-or-source)
-        (local-set-key
-         (kbd "C-c b")
-         'counsel-gtags-go-backward)))
-    (defun counsel-gtags-dwim-ex ()
-      (interactive)
-      (if (bounds-of-thing-at-point
-           'word)
-          (counsel-gtags-dwim)
-        (counsel-gtags-go-backward)))
-    (defun counsel-gtags-find-header-or-source ()
-      (interactive)
-      (let ((prefix (nth 0 (split-string
-                            (buffer-name)
-                            "\\.")))
-            (suffix (nth 1 (split-string
-                            (buffer-name)
-                            "\\.")))
-            (buffer (buffer-name))
-            (target ""))
-        (progn
-          (cond ((string= suffix "c")
-                 (setq target ".h"))
-                ((string= suffix "cpp")
-                 (setq target ".h"))
-                ((string= suffix "cxx")
-                 (setq target ".h"))
-                ((string= suffix "h")
-                 (setq target ".c"))
-                ((string= suffix "hpp")
-                 (setq target ".cpp"))
-                ((string= suffix "hxx")
-                 (setq target ".cxx")))
-          ;;別windowに出ない場合は以下を有効に
-          ;;(other-window 1)
-          ;;(switch-to-buffer buffer)
-          (counsel-gtags-find-file
-           (concat prefix target)))))))
-
 (leaf arduino-mode
   :doc "ino(Arduino)用設定"
   :disabled t
@@ -819,7 +678,7 @@
 
 (leaf *powershell-mode
   :doc "powershell用設定"
-  :hook (powershell-mode-hook . my-powershell-mode-hook)
+  :hook ((powershell-mode-hook . my-powershell-mode-hook))
   :preface
   (defun my-powershell-mode-hook ()
     (local-set-key (kbd "<C-return>") 'my-powershell-shell-send-line)
@@ -832,137 +691,34 @@
 ;;; Utilities
 (leaf *dired
   :doc "diredでファイルオープンやディレクトリ移動で新しいバッファ開かない設定など"
-  :config (leaf
-            all-the-icons-dired
-            :ensure t)
+  :init
+  (defun dired-open-in-accordance-with-situation ()
+    (interactive)
+    (let ((file (dired-get-filename)))
+      (if (file-directory-p file)
+          (dired-find-alternate-file)
+        (dired-find-file))))
+  :config
   (leaf
-    *windows
-    :if (or (eq system-type 'windows-nt)
-            (and (eq system-type 'gnu/linux)
-                 (file-exists-p
-                  "/proc/sys/fs/binfmt_misc/WSLInterop")))
-    :config (defun dired-open-file ()
-              "In dired, open the file named on this line."
-              (interactive)
-              (let* ((file (if (eq system-type 'windows-nt)
-                               (dired-get-filename)
-                             (shell-command-to-string
-                              (concat
-                               "wslpath -w"
-                               " "
-                               (dired-get-filename)))))
-                     (open (if (eq system-type 'windows-nt)
-                               "start"
-                             "explorer.exe")))
-                (message "Opening %s..." file)
-                (shell-command
-                 (mapconcat
-                  #'shell-quote-argument
-                  (list open file)
-                  "
-"))
-                ;;(call-process "gnome-open" nil 0 nil file)
-                (message
-                 "Opening %s done"
-                 file)))
-    (add-hook
-     'dired-mode-hook
-     '(lambda
-        ()
-        (define-key dired-mode-map "\C-o"
-          'dired-open-file)
-        (define-key dired-mode-map "\C-l"
-          'dired-up-directory)
-        (all-the-icons-dired-mode))))
-  (leaf
-    *darwin
-    :if (eq system-type 'darwin)
-    :config (defun open-mac (path)
-              (start-process
-               "dired-open-mac"
-               nil
-               "open"
-               path))
-    (defun quicklook-file (path)
-      (interactive)
-      (defvar cur nil)
-      (defvar old nil)
-      (setq old cur)
-      (setq cur
-            (start-process
-             "ql-file"
-             nil
-             "qlmanage"
-             "-p"
-             path))
-      (when old (delete-process old)))
-    (defun my-dired-open ()
-      (interactive)
-      (let ((exts-ql '("jpeg" "jpg" "png" "gif"))
-            (exts-open '("avi" "mkv" "mp4" "pdf")))
-        (cond ((file-accessible-directory-p
-                (dired-get-file-for-visit))
-               (call-interactively
-                'dired-find-alternate-file))
-              ((member
-                (downcase
-                 (file-name-extension
-                  (dired-get-file-for-visit)))
-                exts-ql)
-               (funcall
-                'quicklook-file
-                (dired-get-file-for-visit)))
-              ((member
-                (downcase
-                 (file-name-extension
-                  (dired-get-file-for-visit)))
-                exts-open)
-               (funcall
-                'open-mac
-                (dired-get-file-for-visit)))
-              (t
-               (call-interactively
-                'dired-find-file-other-window)))))
-    (add-hook
-     'dired-mode-hook
-     '(lambda
-        ()
-        (define-key dired-mode-map "\C-o"
-          'my-dired-open))))
-  (leaf
-    *common
-    :config ;; dired-find-alternate-file の有効化
-    (put
-     'dired-find-alternate-file
-     'disabled
-     nil)
-    ;; ファイルなら別バッファで、ディレクトリなら同じバッファで開く
-    (defun dired-open-in-accordance-with-situation ()
-      (interactive)
-      (let ((file (dired-get-filename)))
-        (if (file-directory-p file)
-            (dired-find-alternate-file)
-          (dired-find-file))))
-    (add-hook
-     'dired-mode-hook
-     '(lambda
-        ()
-        ;; RET 標準の dired-find-file では dired バッファが複数作られるので
-        ;; dired-find-alternate-file を代わりに使う
-        (define-key dired-mode-map (kbd "RET")
-          'dired-open-in-accordance-with-situation)
-        (define-key dired-mode-map (kbd "a")
-          'dired-find-file)))))
+    all-the-icons-dired
+    :ensure t
+    :hook ((dired-mode-hook . (lambda nil
+                                (local-set-key
+                                 (kbd "<return>")
+                                 'dired-open-in-accordance-with-situation)
+                                (all-the-icons-dired-mode t))))))
+  
 
 (leaf *ediff
   :doc "ediff で水平2分割で表示し、制御用のframeを生成させない"
   :custom ((ediff-window-setup-function . 'ediff-setup-windows-plain)
            (ediff-split-window-function . 'split-window-horizontally)
            (ediff-current-diff-overlay-A . t)
-           (ediff-current-diff-overlay-B . t))
-  :config
-  (leaf diffview
-    :ensure t))
+           (ediff-current-diff-overlay-B . t)))
+
+(leaf diffview
+    :doc "パッチをWinMergeのようなside-by-side表示する"
+    :ensure t)
 
 (leaf *vc-dir
   :doc "vc-dirでunregisteredをデフォルトで非表示にするadvice"
@@ -1094,6 +850,7 @@
     ))
 
 (leaf atomic-chrome
+  :doc "chrome拡張 ghosttext入れることでブラウザの入力をEmacsから行う"
   :ensure t)
 
 (leaf treesit
