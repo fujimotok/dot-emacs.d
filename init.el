@@ -263,7 +263,6 @@
          (company-dabbrev-downcase . nil)
          (company-dabbrev-char-regexp . "[A-Za-z_][[:alnum:]_]*"))
   :hook ((emacs-lisp-mode-hook . set-company-backend-lisp-mode)
-         (omnisharp-mode-hook . set-company-backend-omnisharp-mode)
          (shell-mode-hook . set-company-backend-shell-mode)
          ;; lsp-modeがbackendsを書き換えるので、書き換え後をhookして元に戻す
          (lsp-after-initialize-hook . set-company-backend-lsp-mode))
@@ -281,14 +280,6 @@
     (setq-local
      company-backends
      '((company-elisp))))
-  (defun set-company-backend-omnisharp-mode ()
-    (setq-local
-     company-backends
-     '((company-omnisharp
-        company-dabbrev-code
-        company-dabbrev
-        company-files
-        company-keywords))))
   (defun set-company-backend-lsp-mode ()
     (setq-local
      company-backends
@@ -306,42 +297,7 @@
   (leaf company-box
     :ensure t
     :custom ((company-box-scrollbar . nil))
-    :hook ((company-mode-hook . company-box-mode))
-    :config (defconst
-              company-box-icons--omnisharp-alist
-              '(("Text" . Text)
-                ("Method" . Method)
-                ("Function" . Function)
-                ("Constructor" . Constructor)
-                ("Field" . Field)
-                ("Variable" . Variable)
-                ("Class" . Class)
-                ("interface" . Interface)
-                ("Property" . Property)
-                ("Module" . Module)
-                ("Unit" . Unit)
-                ("Value" . Value)
-                ("Enum" . Enum)
-                ("Keyword" . Keyword)
-                ("Snippet" . Snippet)
-                ("Color" . Color)
-                ("File" . File)
-                ("Reference" . Reference))
-              "List of icon types to use with Omnisharp candidates.")
-    (defun company-box-icons--omnisharp (candidate)
-      (when (derived-mode-p 'csharp-mode)
-        (cdr (assoc (alist-get
-                     'Kind
-                     (get-text-property
-                      0
-                      'omnisharp-item
-                      candidate))
-                    company-box-icons--omnisharp-alist))))
-    (with-eval-after-load
-        'company-box
-      (add-to-list
-       'company-box-icons-functions
-       'company-box-icons--omnisharp)))
+    :hook ((company-mode-hook . company-box-mode)))
   (leaf company-quickhelp
     :ensure t
     :hook ((company-box-mode-hook . company-quickhelp-mode))
