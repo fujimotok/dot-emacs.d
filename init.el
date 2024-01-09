@@ -448,12 +448,12 @@
 (leaf *csharp
   :doc "C#用設定"
   :config
-  ;; omnisharp 1.37.0 + lsp-mode stable 8.0.0
+  ;; scoop install omnisharp + eglot
   (leaf
     csharp-mode
     :ensure t
     :hook ((csharp-mode-hook . my-csharp-mode-setup)
-           (csharp-mode-hook . lsp))
+           (csharp-mode-hook . eglot-ensure))
     :bind ((csharp-mode-map
             ("C-x C-e" . my-csharp-shell-send-region))
            (csharp-mode-map
