@@ -71,22 +71,19 @@
          ((kbd "C-z") . undo))
   :custom `((scroll-preserve-screen-position . t)
             (ring-bell-function . 'ignore))
-  :config (set-default-coding-systems
-           'utf-8-unix)
-  (setq-default indent-tabs-mode nil)
-  (setq-default truncate-lines t)
-  (recentf-mode t)
-  (savehist-mode)
-  (electric-pair-mode)
-  ;; 外部からの変更を自動読み込み
-  (global-auto-revert-mode)
-  ;; 現在行をハイライト
-  (global-hl-line-mode t)
-  ;; 対応する括弧をハイライト
-  (show-paren-mode t)
-  (setq show-paren-style 'expression)
-  ;; 選択範囲をハイライト
-  (transient-mark-mode t)
+  :config
+  (set-default-coding-systems 'utf-8-unix) ;; 文字コードのデフォルト設定
+  (setq-default indent-tabs-mode nil)      ;; インデントは絶対スペースで
+  (setq-default truncate-lines t)          ;; 常に折り返し表示しない
+  (recentf-mode t)                         ;; 開いたファイル履歴を有効に
+  (savehist-mode)                          ;; ミニバッファの履歴を有効に
+  (global-auto-revert-mode)                ;; 外部からの変更を自動読み込みを有効に
+  (global-hl-line-mode t)                  ;; 現在行をハイライト
+  (electric-pair-mode)                     ;; 対応する括弧を自動入力
+  (show-paren-mode t)                      ;; 対応する括弧をハイライト
+  (setq show-paren-style 'expression)      ;; 対応する括弧をハイライトで括弧の間もハイライト
+
+  ;; 自動保存機能
   (setq backup-directory-alist
         '((".*" . "~/.emacs.d/auto-save")))
   (setq version-control t)
@@ -94,17 +91,18 @@
   (setq kept-old-versions 1)
   (setq delete-old-versions t)
   (setq create-lockfiles nil)
-  (setq-default left-fringe-width 20)
+
+  ;; フォント設定
   (set-frame-font "ricty diminished-10.5")
-  (set-face-attribute
-   'fringe
-   nil
-   :background "#2a2c38"
-   :foreground "#888882")
+
   (add-hook
    'prog-mode-hook
    #'hs-minor-mode))
 
+(leaf *hs-minor-mode
+  :doc "折り畳み・展開機能"
+  :bind (((kbd "C-;") . hs-toggle-hiding))
+  :hook ((prog-mode-hook . hs-minor-mode)))
 
 ;;; System depended settings
 (leaf *windows-nt
@@ -145,7 +143,14 @@
 (leaf doom-themes
   :doc "doomテーマのロード"
   :ensure t
-  :config (load-theme 'doom-dracula t))
+  :config
+  (load-theme 'doom-dracula t)
+  (setq-default left-fringe-width 20)
+  (set-face-attribute
+   'fringe
+   nil
+   :background "#2a2c38"
+   :foreground "#888882"))
 
 (leaf all-the-icons
   :ensure t
