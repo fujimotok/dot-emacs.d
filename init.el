@@ -452,20 +452,11 @@
   (leaf
     csharp-mode
     :ensure t
-    :hook ((csharp-mode-hook . my-csharp-mode-setup)
-           (csharp-mode-hook . eglot-ensure))
+    :hook ((csharp-mode-hook . eglot-ensure))
     :bind ((csharp-mode-map
-            ("C-x C-e" . my-csharp-shell-send-region))
-           (csharp-mode-map
-            ("<C-return>" . my-csharp-shell-send-line)))
-    :config 
-    (defun my-csharp-mode-setup nil
-      (setq indent-tabs-mode nil)
-      (setq c-syntactic-indentation t)
-      (c-set-style "ellemtel")
-      (setq c-basic-offset 4)
-      (setq tab-width 4))
-    (leaf open-in-msvs :ensure t)))
+            ("C-x C-e" . my-csharp-shell-send-region)
+            ("<C-return>" . my-csharp-shell-send-line))))
+  (leaf open-in-msvs :ensure t))
 
 (leaf nxml-mode
   :doc "xml, xaml用設定"
@@ -493,12 +484,19 @@
    nil
    'eq))
 
-
 (leaf add-node-modules-path
   :doc "現在のバッファでnodeのmodulesへのパスを設定"
   :ensure t
   :hook ((vue-mode-hook . add-node-modules-path)))
 
+(leaf auto-fix
+  :el-get "tomoya/auto-fix.el"
+  :hook ((auto-fix-mode-hook . setup-auto-fix))
+  :config
+  (defun setup-auto-fix ()
+    (add-hook
+     'before-save-hook
+     #'auto-fix-before-save)))
 
 (leaf js2-mode
   :doc "javascript用設定 linter: npm i eslint"
@@ -595,45 +593,34 @@
             (flycheck-arduino-setup)
             (defvar-local flycheck-check-syntax-automatically '(save))
             (flycheck-mode)))
-
-(leaf auto-fix
-  :el-get "tomoya/auto-fix.el"
-  :hook ((auto-fix-mode-hook . setup-auto-fix))
-  :config
-  (defun setup-auto-fix ()
-    (add-hook
-     'before-save-hook
-     #'auto-fix-before-save)))
-
-(leaf *powershell-mode
+  
+(leaf powershell
   :doc "powershell用設定"
-  :hook ((powershell-mode-hook . my-powershell-mode-hook))
-  :preface
-  (defun my-powershell-mode-hook ()
-    (local-set-key (kbd "<C-return>") 'my-powershell-shell-send-line)
-    (local-set-key (kbd "C-x C-e") 'my-powershell-shell-send-region)
-    (lsp))
-  :config
-  (leaf powershell
-    :ensure t))
+  :ensure t
+  :hook ((powershell-mode-hook . lsp))
+  :bind ((powershell-mode-map
+          ("<C-return>" . my-powershell-shell-send-line)
+          ("C-x C-e" . my-powershell-shell-send-region))))
+
 
 ;;; Utilities
-(leaf *dired
+(leaf dired
   :doc "diredでファイルオープンやディレクトリ移動で新しいバッファ開かない設定など"
   :custom ((dired-dwim-target . t))
   :hook ((dired-mode-hook . my-dired-mode-hook))
+  :bind ((dired-mode-map
+          ("<return>" . dired-open-in-accordance-with-situation)
+          ("/" . dired-narrow-regexp)))
   :init
   (defun dired-open-in-accordance-with-situation ()
     (interactive)
-    (let ((file (dired-get-filename)))
+    (let ((file (condition-case err
+                    (dired-get-filename)
+                  (error "../"))))
       (if (file-directory-p file)
           (dired-find-alternate-file)
         (dired-find-file))))
   (defun my-dired-mode-hook ()
-        (local-set-key (kbd "<return>")
-                       'dired-open-in-accordance-with-situation)
-        (local-set-key (kbd "/")
-                       'dired-narrow-regexp)
         (all-the-icons-dired-mode t))
   :config
   (leaf dired-narrow
