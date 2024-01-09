@@ -379,19 +379,21 @@
            (flycheck-idle-change-delay . 2)))
 
 (leaf *gud-mode
-  :config (defun gud-print-at-symbol ()
-            (interactive)
-            (let ((cursor-symbol-pos (bounds-of-thing-at-point
-                                      'symbol)))
-              (if cursor-symbol-pos
-                  (save-excursion
-                    (set-mark
-                     (car cursor-symbol-pos))
-                    (goto-char
-                     (cdr cursor-symbol-pos))
-                    (gud-print
-                     (car cursor-symbol-pos))
-                    (deactivate-mark t)))))
+  :config
+  (declare-function gud-print     "gud" (arg))
+  (defun gud-print-at-symbol ()
+    (interactive)
+    (let ((cursor-symbol-pos (bounds-of-thing-at-point
+                              'symbol)))
+      (if cursor-symbol-pos
+          (save-excursion
+            (set-mark
+             (car cursor-symbol-pos))
+            (goto-char
+             (cdr cursor-symbol-pos))
+            (gud-print
+             (car cursor-symbol-pos))
+            (deactivate-mark t)))))
   ;; watch
   (global-set-key
    (kbd "<f8>")
@@ -493,10 +495,10 @@
 
 
 (leaf add-node-modules-path
+  :doc "現在のバッファでnodeのmodulesへのパスを設定"
   :ensure t
-  :config (add-hook
-           'vue-mode-hook
-           #'add-node-modules-path))
+  :hook ((vue-mode-hook . add-node-modules-path)))
+
 
 (leaf js2-mode
   :doc "javascript用設定 linter: npm i eslint"
@@ -549,18 +551,12 @@
 (leaf *python-mode
   :doc "python用設定"
   :hook (python-mode-hook . my-python-mode-hook)
+  :bind (("<f5>" . my-pdb)
+         ("<C-return>" . my-python-shell-send-line)
+         ("C-x C-e" . my-python-shell-send-region))
   :preface
   (defun my-python-mode-hook ()
-    (local-set-key (kbd "<f5>") 'my-pdb)
-    (local-set-key (kbd "<C-return>") 'my-python-shell-send-line)
-    (local-set-key (kbd "C-x C-e") 'my-python-shell-send-region)
-    (lsp)
-    ;; IPythonが使えるならrun-pythonはipythonを使う
-    (when (executable-find "ipython")
-      (setq python-shell-interpreter
-            "ipython"
-            python-shell-interpreter-args
-            "-i --simple-prompt --InteractiveShell.display_page=True")))
+    (lsp))
   (defun my-pdb ()
     (interactive)
     (pdb
@@ -569,24 +565,30 @@
       (buffer-file-name
        (current-buffer)))))
   :config
+  ;; IPythonが使えるならrun-pythonはipythonを使う
+  (when (executable-find "ipython")
+    (setq python-shell-interpreter
+          "ipython"
+          python-shell-interpreter-args
+          "-i --simple-prompt --InteractiveShell.display_page=True"))
+
   (leaf pyvenv
     :ensure t
-    :hook (python-mode-hook . (lambda ()
-                                (pyvenv-mode 1)
-                                (pyvenv-activate "venv")))))
+    :config
+    (pyvenv-mode t)))
+              
 
 (leaf arduino-mode
   :doc "ino(Arduino)用設定"
   :disabled t
   :custom ((arduino-executable . "arduino_debug")
            (flycheck-arduino-executable . "arduino_debug"))
-  :config (defun my-arduino-mode-hook nil
+  :hook ((python-mode-hook . my-arduino-mode-hook))
+  :config
+  (defun my-arduino-mode-hook ()
             (flycheck-arduino-setup)
             (defvar-local flycheck-check-syntax-automatically '(save))
-            (flycheck-mode))
-  (add-hook
-   'arduino-mode-hook
-   'my-arduino-mode-hook))
+            (flycheck-mode)))
 
 (leaf auto-fix
   :el-get "tomoya/auto-fix.el"
@@ -650,7 +652,7 @@
     :doc "パッチをWinMergeのようなside-by-side表示する"
     :ensure t)
 
-(leaf *vc-dir
+(leaf vc-dir
   :doc "vc-dirでunregisteredをデフォルトで非表示にするadvice"
   :config (defun vc-dir-advice (&rest args)
              (vc-dir-hide-state 'unregistered))
@@ -706,7 +708,9 @@
   :doc "Google翻訳パッケージ"
   :ensure t
   :bind (("C-x t" . google-translate-enja-or-jaen))
-  :config (defvar google-translate-english-chars "[:ascii:]’“”–"
+  :config
+  (require 'google-translate-core-ui)
+  (defvar google-translate-english-chars "[:ascii:]’“”–"
             "これらの文字が含まれているときは英語とみなす")
   (defun google-translate-enja-or-jaen (&optional string)
     "regionか、現在のセンテンスを言語自動判別でGoogle翻訳する。"
@@ -749,10 +753,10 @@
 
 (leaf *clojure-mode
   :doc "needs cljstyle https://github.com/greglook/cljstyle"
+  :custom ((cljstyle-exec-path . "cljstyle.jar"))
   :config
   (add-hook 'clojure-mode-hook 'setup-clojure-auto-fix)
   (add-hook 'clojurescript-mode-hook 'setup-clojure-auto-fix)
-  (defcustom cljstyle-exec-path "cljstyle.jar" "cljstyle executable path.")
   (defun setup-clojure-auto-fix ()
     (setq-local
      auto-fix-command
