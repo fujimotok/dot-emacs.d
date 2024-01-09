@@ -558,7 +558,9 @@
           ("C-x C-e" . my-python-shell-send-region)))
   :preface
   (defun my-python-mode-hook ()
-    (lsp))
+    ;; pip install python-lsp-server が必要
+    ;; pyvenv-activate した後に再度 M-x eglot が必要
+    (eglot-ensure))
   (defun my-pdb ()
     (interactive)
     (pdb
@@ -567,11 +569,14 @@
       (buffer-file-name
        (current-buffer)))))
   ;; IPythonが使えるならrun-pythonはipythonを使う
-  (when (executable-find "ipython")
+  (if (executable-find "ipython")
     (setq python-shell-interpreter
           "ipython"
           python-shell-interpreter-args
-          "-i --simple-prompt --InteractiveShell.display_page=True"))
+          "-i --simple-prompt --InteractiveShell.display_page=True")
+    ;; Emacs 29 からは普通のpythonの時も指定が必要？
+    (setq python-shell-interpreter
+          "python"))
   :config
   (leaf pyvenv
     :ensure t
@@ -655,7 +660,9 @@
 
 (leaf vc-dir
   :doc "vc-dirでunregisteredをデフォルトで非表示にするadvice"
-  :config (defun vc-dir-advice (&rest args)
+  :config
+  (declare-function vc-dir-hide-state "vc-dir")
+  (defun vc-dir-advice (&rest args)
              (vc-dir-hide-state 'unregistered))
   :advice (:after vc--process-sentinel vc-dir-advice))
 
@@ -710,7 +717,7 @@
   :ensure t
   :bind (("C-x t" . google-translate-enja-or-jaen))
   :config
-  (require 'google-translate-core-ui)
+  (declare-function google-translate-translate "google-translate-core-ui")
   (defvar google-translate-english-chars "[:ascii:]’“”–"
             "これらの文字が含まれているときは英語とみなす")
   (defun google-translate-enja-or-jaen (&optional string)
