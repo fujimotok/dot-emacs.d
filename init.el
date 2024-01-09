@@ -551,9 +551,11 @@
 (leaf *python-mode
   :doc "python用設定"
   :hook (python-mode-hook . my-python-mode-hook)
-  :bind (("<f5>" . my-pdb)
-         ("<C-return>" . my-python-shell-send-line)
-         ("C-x C-e" . my-python-shell-send-region))
+  :bind ((:python-mode-map
+          :package python
+          ("<f5>" . my-pdb)
+          ("<C-return>" . my-python-shell-send-line)
+          ("C-x C-e" . my-python-shell-send-region)))
   :preface
   (defun my-python-mode-hook ()
     (lsp))
@@ -564,18 +566,17 @@
       "python -m pdb "
       (buffer-file-name
        (current-buffer)))))
-  :config
   ;; IPythonが使えるならrun-pythonはipythonを使う
   (when (executable-find "ipython")
     (setq python-shell-interpreter
           "ipython"
           python-shell-interpreter-args
           "-i --simple-prompt --InteractiveShell.display_page=True"))
-
+  :config
   (leaf pyvenv
     :ensure t
     :config
-    (pyvenv-mode t)))
+    (pyvenv-mode 1)))
               
 
 (leaf arduino-mode
