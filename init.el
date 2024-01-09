@@ -462,55 +462,24 @@
       (setq c-syntactic-indentation t)
       (c-set-style "ellemtel")
       (setq c-basic-offset 4)
-      (setq truncate-lines t)
-      (setq tab-width 4)
-      (setq evil-shift-width 4))
+      (setq tab-width 4))
     (leaf open-in-msvs :ensure t)))
 
 (leaf nxml-mode
   :doc "xml, xaml用設定"
   :mode "\\.xaml\\'"
+  :hook ((nxml-mode-hook . hs-minor-mode))
   :bind ((nxml-mode-map
           ("C-c C-o" . hs-toggle-hiding)
           ("C-c C-l" . hs-hide-level)
           ("C-c C-a" . hs-show-all)))
-  :mode (("\\.xaml\\'" . nxml-mode))
-  :config ;; エラー行にマークがつくようにadvice
-  (defun rng-mark-error-advice (message beg end)
-    (let ((overlays (overlays-in beg end))
-          (continue t))
-      (while (and overlays continue)
-        (let ((o (car overlays)))
-          (when (and (eq (overlay-get o 'category)
-                         'rng-error)
-                     (= (overlay-start o) beg)
-                     (= (overlay-end o) end))
-            (overlay-put
-             o
-             'before-string
-             (propertize
-              "!"
-              'display
-              (list
-               'left-fringe
-               'right-triangle)))
-            (setq continue nil)))
-        (setq overlays (cdr overlays)))))
-  (advice-add
-   'rng-mark-error
-   :after 'rng-mark-error-advice)
+  :custom ((nxml-child-indent . 4)
+           (nxml-slash-auto-complete-flag . t))
+  :custom-face
   ;; エラー箇所に波下線を出すface設定
-  (set-face-attribute
-   'rng-error
-   nil
-   :underline '(:color "red" :style wave))
-  (setq nxml-slash-auto-complete-flag
-        t)
-  (add-hook
-   'nxml-mode-hook
-   #'(lambda
-      nil
-      (setq nxml-child-indent 4)))
+  ((rng-error . '((t (:underline (:color "red" :style wave))))))
+  :config
+  ;; hs-minor-modeでxmlに対応するように設定
   (add-to-list
    'hs-special-modes-alist
    '(nxml-mode
