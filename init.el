@@ -93,11 +93,7 @@
   (setq create-lockfiles nil)
 
   ;; フォント設定
-  (set-frame-font "ricty diminished-10.5")
-
-  (add-hook
-   'prog-mode-hook
-   #'hs-minor-mode))
+  (set-frame-font "ricty diminished-10.5"))
 
 (leaf *hs-minor-mode
   :doc "折り畳み・展開機能"
@@ -196,12 +192,7 @@
 (leaf rainbow-delimiters
   :doc "カッコに色をつけるパッケージ"
   :ensure t
-  :config
-  (define-globalized-minor-mode
-    global-rainbow-delimiters-mode
-    rainbow-delimiters-mode
-    rainbow-delimiters-mode)
-  (global-rainbow-delimiters-mode t))
+  :hook ((prog-mode-hook . rainbow-delimiters-mode)))
 
 (leaf *vertico
   :doc "emacsコマンド補完パッケージ"
