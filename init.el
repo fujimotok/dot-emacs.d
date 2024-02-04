@@ -194,6 +194,15 @@
   :ensure t
   :hook ((prog-mode-hook . rainbow-delimiters-mode)))
 
+(leaf highlight-indent-guides
+  :doc "インデントに線をつけるパッケージ"
+  :ensure t
+  :hook ((prog-mode-hook . highlight-indent-guides-mode))
+  :custom
+  ((highlight-indent-guides-method . 'bitmap)
+  (highlight-indent-guides-auto-enabled . t)
+  (highlight-indent-guides-responsive . t)))
+
 (leaf *vertico
   :doc "emacsコマンド補完パッケージ"
   :config
