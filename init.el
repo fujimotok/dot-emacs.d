@@ -741,7 +741,10 @@
   :el-get tomoya/search-web.el
   :bind (("C-x s" . search-web-dwim))
   :config
-  (require 'search-web))
+  (require 'search-web)
+  (add-to-list
+   'search-web-engines
+   '("bing" "https://www.bing.com/search?q=%s" nil)))
 
 (leaf google-translate
   :doc "Google翻訳パッケージ"
