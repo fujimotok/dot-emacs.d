@@ -595,10 +595,16 @@
 (leaf powershell
   :doc "powershell用設定"
   :ensure t
-  :hook ((powershell-mode-hook . lsp))
+  :hook ((powershell-mode-hook . eglot-ensure))
   :bind ((powershell-mode-map
           ("<C-return>" . my-powershell-shell-send-line)
-          ("C-x C-e" . my-powershell-shell-send-region))))
+          ("C-x C-e" . my-powershell-shell-send-region)))
+  :config
+  (with-eval-after-load 'eglot
+    (add-to-list
+     'eglot-server-programs
+     `(powershell-mode . ,(eglot-powershell-lsp-command)))))
+
 
 (leaf *clojure-mode
   :doc "needs cljstyle https://github.com/greglook/cljstyle"
