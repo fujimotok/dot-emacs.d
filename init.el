@@ -100,6 +100,7 @@
   :bind (((kbd "C-;") . hs-toggle-hiding))
   :hook ((prog-mode-hook . hs-minor-mode)))
 
+
 ;;; System depended settings
 (leaf *windows-nt
   :doc "Windows環境のみの設定"
@@ -119,9 +120,8 @@
    (lambda ()
      (set-process-coding-system
       'sjis-dos
-      'sjis-dos))))
-
-(leaf tr-ime
+      'sjis-dos)))
+  (leaf tr-ime
   :doc "NTEmacsでIMEの自動ON/OFFするためのパッケージ"
   :if (eq system-type 'windows-nt)
   :ensure t
@@ -132,7 +132,7 @@
            'w32-ime-init-mode-line-display
            :override (lambda ()))
   (tr-ime-standard-install)
-  (w32-ime-initialize))
+  (w32-ime-initialize)))
 
 
 ;;; Appearance settings
@@ -239,7 +239,8 @@
     :custom ((embark-indicators . '(embark-minimal-indicator embark-highlight-indicator))))
   )
 
-;;; Programming langages settings
+
+;;; Programming support settings
 (leaf company
   :doc "補完機能パッケージ"
   :ensure t
@@ -419,6 +420,23 @@
   :advice (:around eldoc-message
                    my:shutup-eldoc-message))
 
+(leaf auto-fix
+  :el-get "tomoya/auto-fix.el"
+  :hook ((auto-fix-mode-hook . setup-auto-fix))
+  :config
+  (defun setup-auto-fix ()
+    (add-hook
+     'before-save-hook
+     #'auto-fix-before-save)))
+
+(leaf treesit
+  :doc "Emacs biltin tree-sitter. You need to rename tree-sitter-langs/bin/<lang> to libtree-sitter-<lang>, and set PATH env."
+  ;; package install tree-sitter-langs
+  ;; tree-sitter-langs は1回だけインストールしてbinをコピーした後は消す
+  )
+
+
+;;; Programming langages settings
 (leaf markdown-mode
   :doc "markdown用設定"
   :hook ((markdown-mode-hook . (lambda nil (outline-hide-sublevels 2))))
@@ -444,19 +462,6 @@
         (move-end-of-line 1)
         (markdown-insert-header-dwim)
         ))))
-
-(leaf *csharp
-  :doc "C#用設定"
-  :config
-  ;; scoop install omnisharp + eglot
-  (leaf
-    csharp-mode
-    :ensure t
-    :hook ((csharp-mode-hook . eglot-ensure))
-    :bind ((csharp-mode-map
-            ("C-x C-e" . my-csharp-shell-send-region)
-            ("<C-return>" . my-csharp-shell-send-line))))
-  (leaf open-in-msvs :ensure t))
 
 (leaf nxml-mode
   :doc "xml, xaml用設定"
@@ -484,53 +489,6 @@
    nil
    'eq))
 
-(leaf add-node-modules-path
-  :doc "現在のバッファでnodeのmodulesへのパスを設定"
-  :ensure t
-  :hook ((vue-mode-hook . add-node-modules-path)))
-
-(leaf auto-fix
-  :el-get "tomoya/auto-fix.el"
-  :hook ((auto-fix-mode-hook . setup-auto-fix))
-  :config
-  (defun setup-auto-fix ()
-    (add-hook
-     'before-save-hook
-     #'auto-fix-before-save)))
-
-(leaf js2-mode
-  :doc "javascript用設定 linter: npm i eslint"
-  :ensure t
-  :mode (("\\.js\\'" . js2-mode))
-  :hook ((js2-mode-hook . flycheck-mode)
-         (js2-mode-hook . setup-js-auto-fix))
-  :config
-  (defun setup-js-auto-fix ()
-    (setq-local
-     auto-fix-command
-     "eslint")
-    (setq-local
-     auto-fix-option
-     "--fix")
-    (auto-fix-mode 1)))
-
-(leaf typescript-mode
-  :doc "tipescript用設定 linter: npm i eslint"
-  :ensure t
-  :hook ((typescript-mode-hook . lsp)
-         (typescript-mode-hook . flycheck-mode)
-         (typescript-mode-hook . setup-js-auto-fix))
-  :custom ((typescript-indent-level . 2))
-  :config
-  (defun setup-js-auto-fix ()
-    (setq-local
-     auto-fix-command
-     "eslint")
-    (setq-local
-     auto-fix-option
-     "--fix")
-    (auto-fix-mode 1)))
-
 (leaf json-mode
   :doc "Json用設定 linter: npm i jsonlint"
   :ensure t
@@ -546,7 +504,60 @@
      "-i")
     (auto-fix-mode 1)))
 
-(leaf *python-mode
+(leaf *csharp
+  :doc "C#用設定"
+  :config
+  ;; scoop install omnisharp + eglot
+  (leaf
+    csharp-mode
+    :ensure t
+    :hook ((csharp-mode-hook . eglot-ensure))
+    :bind ((csharp-mode-map
+            ("C-x C-e" . my-csharp-shell-send-region)
+            ("<C-return>" . my-csharp-shell-send-line))))
+  (leaf open-in-msvs :ensure t))
+
+(leaf *java-script
+  :config
+  (leaf add-node-modules-path
+    :doc "現在のバッファでnodeのmodulesへのパスを設定"
+    :ensure t
+    :hook ((vue-mode-hook . add-node-modules-path)))
+
+  (leaf js2-mode
+    :doc "javascript用設定 linter: npm i eslint"
+    :ensure t
+    :mode (("\\.js\\'" . js2-mode))
+    :hook ((js2-mode-hook . flycheck-mode)
+           (js2-mode-hook . setup-js-auto-fix))
+    :config
+    (defun setup-js-auto-fix ()
+      (setq-local
+       auto-fix-command
+       "eslint")
+      (setq-local
+       auto-fix-option
+       "--fix")
+      (auto-fix-mode 1)))
+
+  (leaf typescript-mode
+    :doc "tipescript用設定 linter: npm i eslint"
+    :ensure t
+    :hook ((typescript-mode-hook . lsp)
+           (typescript-mode-hook . flycheck-mode)
+           (typescript-mode-hook . setup-js-auto-fix))
+    :custom ((typescript-indent-level . 2))
+    :config
+    (defun setup-js-auto-fix ()
+      (setq-local
+       auto-fix-command
+       "eslint")
+      (setq-local
+       auto-fix-option
+       "--fix")
+      (auto-fix-mode 1))))
+
+(leaf python-mode
   :doc "python用設定"
   :hook (python-mode-hook . my-python-mode-hook)
   :bind ((:python-mode-map
@@ -581,6 +592,45 @@
     :config
     (pyvenv-mode 1)))
               
+(leaf powershell
+  :doc "powershell用設定"
+  :ensure t
+  :hook ((powershell-mode-hook . lsp))
+  :bind ((powershell-mode-map
+          ("<C-return>" . my-powershell-shell-send-line)
+          ("C-x C-e" . my-powershell-shell-send-region))))
+
+(leaf *clojure-mode
+  :doc "needs cljstyle https://github.com/greglook/cljstyle"
+  :custom ((cljstyle-exec-path . "cljstyle.jar"))
+  :config
+  (add-hook 'clojure-mode-hook 'setup-clojure-auto-fix)
+  (add-hook 'clojurescript-mode-hook 'setup-clojure-auto-fix)
+  (defun setup-clojure-auto-fix ()
+    (setq-local
+     auto-fix-command
+     "cljstyle")
+    (setq-local
+     auto-fix-option
+     "fix")
+    (auto-fix-mode 1))
+
+  (leaf cider
+    :ensure t)
+
+  (leaf clj-refactor
+    :ensure t)
+
+  (leaf flycheck-clj-kondo
+    :doc "needs clj-kondo https://github.com/clj-kondo/clj-kondo"
+    :ensure t
+    :config
+    (require 'flycheck-clj-kondo)
+    (add-hook 'clojure-mode-hook 'my-clojure-mode-hook)
+    (add-hook 'clojurescript-mode-hook 'my-clojure-mode-hook)
+    (defun my-clojure-mode-hook ()
+      (flycheck-mode))
+    ))
 
 (leaf arduino-mode
   :doc "ino(Arduino)用設定"
@@ -593,14 +643,6 @@
             (flycheck-arduino-setup)
             (defvar-local flycheck-check-syntax-automatically '(save))
             (flycheck-mode)))
-  
-(leaf powershell
-  :doc "powershell用設定"
-  :ensure t
-  :hook ((powershell-mode-hook . lsp))
-  :bind ((powershell-mode-map
-          ("<C-return>" . my-powershell-shell-send-line)
-          ("C-x C-e" . my-powershell-shell-send-region))))
 
 
 ;;; Utilities
@@ -695,7 +737,9 @@
             (shell-dirtrack-mode t)))
 
 (leaf search-web
+  :doc "ブラウザで検索実行"
   :el-get tomoya/search-web.el
+  :bind (("C-x s" . search-web-dwim))
   :config
   (require 'search-web))
 
@@ -745,48 +789,9 @@
     "Search TKK."
     (list 430675 2721866130)))
 
-
-(leaf *clojure-mode
-  :doc "needs cljstyle https://github.com/greglook/cljstyle"
-  :custom ((cljstyle-exec-path . "cljstyle.jar"))
-  :config
-  (add-hook 'clojure-mode-hook 'setup-clojure-auto-fix)
-  (add-hook 'clojurescript-mode-hook 'setup-clojure-auto-fix)
-  (defun setup-clojure-auto-fix ()
-    (setq-local
-     auto-fix-command
-     "cljstyle")
-    (setq-local
-     auto-fix-option
-     "fix")
-    (auto-fix-mode 1))
-
-  (leaf cider
-    :ensure t)
-
-  (leaf clj-refactor
-    :ensure t)
-
-  (leaf flycheck-clj-kondo
-    :doc "needs clj-kondo https://github.com/clj-kondo/clj-kondo"
-    :ensure t
-    :config
-    (require 'flycheck-clj-kondo)
-    (add-hook 'clojure-mode-hook 'my-clojure-mode-hook)
-    (add-hook 'clojurescript-mode-hook 'my-clojure-mode-hook)
-    (defun my-clojure-mode-hook ()
-      (flycheck-mode))
-    ))
-
 (leaf atomic-chrome
   :doc "chrome拡張 ghosttext入れることでブラウザの入力をEmacsから行う"
   :ensure t)
-
-(leaf treesit
-  :doc "Emacs biltin tree-sitter. You need to rename tree-sitter-langs/bin/<lang> to libtree-sitter-<lang>, and set PATH env."
-  ;; package install tree-sitter-langs
-  ;; tree-sitter-langs は1回だけインストールしてbinをコピーした後は消す
-  )
 
 (leaf *aichat
   :doc "bing aiと対話"
