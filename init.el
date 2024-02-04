@@ -305,76 +305,6 @@
     :custom ((company-quickhelp-delay . 1)))
   (global-company-mode))
 
-(leaf lsp-mode
-  :ensure t
-  :custom ;; debug
-  ((lsp-print-io . t)
-   (lsp-trace . t)
-   (lsp-print-performance . t)
-   (lsp-enable-snippet . nil)
-   ;; general
-   (lsp-auto-guess-root . nil)
-   (lsp-document-sync-method . 2)
-   (lsp-response-timeout . 5)
-   (read-process-output-max . 10485760))
-  :bind ((lsp-mode-map
-          ("C-c C-r" . lsp-rename)))
-  :config
-  (leaf
-    lsp-ui
-    :ensure t
-    :doc "LSP UI tools"
-    :custom ;; lsp-ui-doc
-    ((lsp-ui-doc-enable . nil)
-     (lsp-ui-doc-header . t)
-     (lsp-ui-doc-include-signature . t)
-     (lsp-ui-doc-position . 'at-point)
-     ;; top, bottom, or at-point
-     (lsp-ui-doc-max-width . 100)
-     (lsp-ui-doc-max-height . 30)
-     (lsp-ui-doc-use-childframe . t)
-     (lsp-ui-doc-use-webkit . t)
-     ;; lsp-ui-flycheck
-     (lsp-ui-flycheck-enable . nil)
-     ;; lsp-ui-sideline
-     (lsp-ui-sideline-enable . nil)
-     (lsp-ui-sideline-ignore-duplicate . t)
-     (lsp-ui-sideline-show-symbol . nil)
-     (lsp-ui-sideline-show-hover . nil)
-     (lsp-ui-sideline-show-diagnostics . nil)
-     (lsp-ui-sideline-show-code-actions . nil)
-     ;; lsp-ui-imenu
-     (lsp-ui-imenu-enable . nil)
-     (lsp-ui-imenu-kind-position . 'top)
-     ;; lsp-ui-peek
-     (lsp-ui-peek-enable . t)
-     (lsp-ui-peek-peek-height . 20)
-     (lsp-ui-peek-list-width . 50)
-     (lsp-ui-peek-fontify . 'on-demand))
-    ;; never, on-demand, or always
-    :preface (defun lsp-ui-peek-find-definitions-or-pop ()
-               (interactive)
-               (if (bounds-of-thing-at-point
-                    'word)
-                   (lsp-ui-peek-find-definitions)
-                 (xref-pop-marker-stack)))
-    (defun lsp-ui-peek-find-references-or-pop ()
-      (interactive)
-      (if (bounds-of-thing-at-point
-           'word)
-          (lsp-ui-peek-find-references)
-        (xref-pop-marker-stack)))
-    :bind ((lsp-mode-map
-            ("C-j" . lsp-ui-peek-find-definitions-or-pop))
-           (lsp-mode-map
-            ("C-S-j" . lsp-ui-peek-find-references-or-pop))
-           (lsp-mode-map
-            ("C-h d" . lsp-ui-doc-show))
-           (lsp-mode-map
-            ("C-h a" . lsp-execute-code-action)))
-    :hook ((lsp-mode-hook . lsp-ui-mode)
-           (lsp-mode-hook . lsp-completion-mode))))
-
 (leaf flycheck
   :custom ((flycheck-check-syntax-automatically . '(mode-enabled save))
            (flycheck-idle-change-delay . 2)))
@@ -604,7 +534,6 @@
     (add-to-list
      'eglot-server-programs
      `(powershell-mode . ,(eglot-powershell-lsp-command)))))
-
 
 (leaf *clojure-mode
   :doc "needs cljstyle https://github.com/greglook/cljstyle"
