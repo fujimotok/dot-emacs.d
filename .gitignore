@@ -6,3 +6,5 @@
 !native-comp
 !native-comp/*
 !native-comp/*/*
+!dependencies
+!dependencies/*

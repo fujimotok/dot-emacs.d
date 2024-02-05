@@ -1,0 +1,99 @@
+{
+    "buckets": [
+        {
+            "Name": "extras",
+            "Source": "https://github.com/ScoopInstaller/Extras",
+            "Updated": {
+                "value": "\/Date(1704803374000)\/",
+                "DisplayHint": 2,
+                "DateTime": "2024”N1ŒŽ9“ú 21:29:34"
+            },
+            "Manifests": 1892
+        },
+        {
+            "Name": "main",
+            "Source": "https://github.com/ScoopInstaller/Main",
+            "Updated": {
+                "value": "\/Date(1704803430000)\/",
+                "DisplayHint": 2,
+                "DateTime": "2024”N1ŒŽ9“ú 21:30:30"
+            },
+            "Manifests": 1268
+        },
+        {
+            "Name": "versions",
+            "Source": "https://github.com/ScoopInstaller/Versions",
+            "Updated": {
+                "value": "\/Date(1704804451000)\/",
+                "DisplayHint": 2,
+                "DateTime": "2024”N1ŒŽ9“ú 21:47:31"
+            },
+            "Manifests": 435
+        }
+    ],
+    "apps": [
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "7zip",
+            "Version": "23.01",
+            "Updated": "\/Date(1692331138319)\/"
+        },
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "dark",
+            "Version": "3.11.2",
+            "Updated": "\/Date(1696686162264)\/"
+        },
+        {
+            "Info": "",
+            "Source": "extras",
+            "Name": "emacs",
+            "Version": "29.1",
+            "Updated": "\/Date(1692331258919)\/"
+        },
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "git",
+            "Version": "2.41.0.3",
+            "Updated": "\/Date(1692331157048)\/"
+        },
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "nvm",
+            "Version": "1.1.11",
+            "Updated": "\/Date(1693146498127)\/"
+        },
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "omnisharp",
+            "Version": "1.39.11",
+            "Updated": "\/Date(1704805974584)\/"
+        },
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "python",
+            "Version": "3.12.0",
+            "Updated": "\/Date(1696686201553)\/"
+        },
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "ripgrep",
+            "Version": "14.0.3",
+            "Updated": "\/Date(1704167522214)\/"
+        },
+        {
+            "Info": "",
+            "Source": "main",
+            "Name": "zstd",
+            "Version": "1.5.5",
+            "Updated": "\/Date(1704167628128)\/"
+        }
+    ]
+}
