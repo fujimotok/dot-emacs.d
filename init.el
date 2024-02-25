@@ -115,12 +115,9 @@
   (add-to-list
    'process-coding-system-alist
    '("python" . sjis-dos))
-  (add-hook
-   'shell-mode-hook
-   (lambda ()
-     (set-process-coding-system
-      'sjis-dos
-      'sjis-dos)))
+  (add-to-list
+   'process-coding-system-alist
+   '("powershell" . sjis-dos))
   (leaf tr-ime
   :doc "NTEmacsでIMEの自動ON/OFFするためのパッケージ"
   :if (eq system-type 'windows-nt)
