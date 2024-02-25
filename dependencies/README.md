@@ -13,3 +13,4 @@ Install global.
 # node
 Install global.
 `npm install -g jsonlint eslint`
+`npm install -g typescript-language-server typescript`

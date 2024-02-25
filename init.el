@@ -273,9 +273,7 @@
          (company-dabbrev-downcase . nil)
          (company-dabbrev-char-regexp . "[A-Za-z_][[:alnum:]_]*"))
   :hook ((emacs-lisp-mode-hook . set-company-backend-lisp-mode)
-         (shell-mode-hook . set-company-backend-shell-mode)
-         ;; lsp-modeがbackendsを書き換えるので、書き換え後をhookして元に戻す
-         (lsp-after-initialize-hook . set-company-backend-lsp-mode))
+         (shell-mode-hook . set-company-backend-shell-mode))
   :config
   (with-eval-after-load
       'company
@@ -289,15 +287,7 @@
   (defun set-company-backend-lisp-mode ()
     (setq-local
      company-backends
-     '((company-elisp))))
-  (defun set-company-backend-lsp-mode ()
-    (setq-local
-     company-backends
-     '((company-capf
-        company-dabbrev-code
-        company-dabbrev
-        company-files
-        company-keywords))))
+     '((company-elisp))))  
   (defun set-company-backend-shell-mode ()
     (setq-local
      company-backends
@@ -372,7 +362,7 @@
   :doc "Emacs biltin tree-sitter. You need to rename tree-sitter-langs/bin/<lang> to libtree-sitter-<lang>, and set PATH env."
   ;; package install tree-sitter-langs
   ;; tree-sitter-langs は1回だけインストールしてbinをコピーした後は消す
-  )
+  (global-tree-sitter-mode))
 
 
 ;;; Programming langages settings
@@ -463,38 +453,20 @@
     :ensure t
     :hook ((vue-mode-hook . add-node-modules-path)))
 
-  (leaf js2-mode
-    :doc "javascript用設定 linter: npm i eslint"
-    :ensure t
-    :mode (("\\.js\\'" . js2-mode))
-    :hook ((js2-mode-hook . flycheck-mode)
-           (js2-mode-hook . setup-js-auto-fix))
-    :config
-    (defun setup-js-auto-fix ()
-      (setq-local
-       auto-fix-command
-       "eslint")
-      (setq-local
-       auto-fix-option
-       "--fix")
-      (auto-fix-mode 1)))
+  (leaf js-mode
+    :doc "javascript用設定 langurage server: npm install -g typescript-language-server typescript"
+    :mode (("\\.jsx\\'" . js-jsx-mode)) ;; jsxのTreesit対応してないっぽい
+    :hook ((js-mode-hook . eglot-ensure))
+    :custom ((js-indent-level . 2)))
 
   (leaf typescript-mode
-    :doc "tipescript用設定 linter: npm i eslint"
+    :doc "tipescript用設定 langurage server: npm install -g typescript-language-server typescript"
     :ensure t
-    :hook ((typescript-mode-hook . lsp)
-           (typescript-mode-hook . flycheck-mode)
-           (typescript-mode-hook . setup-js-auto-fix))
-    :custom ((typescript-indent-level . 2))
-    :config
-    (defun setup-js-auto-fix ()
-      (setq-local
-       auto-fix-command
-       "eslint")
-      (setq-local
-       auto-fix-option
-       "--fix")
-      (auto-fix-mode 1))))
+    :mode (("\\.tsx\\'" . tsx-ts-mode))
+    :hook ((typescript-mode-hook . eglot-ensure)
+           (tsx-ts-mode-hook . eglot-ensure))
+    :custom ((typescript-indent-level . 2))))
+
 
 (leaf python-mode
   :doc "python用設定"
