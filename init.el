@@ -305,6 +305,18 @@
   :custom ((flycheck-check-syntax-automatically . '(mode-enabled save))
            (flycheck-idle-change-delay . 2)))
 
+(leaf xref
+  :doc "組込みのソースナビゲーションシステム"
+  :bind (("C-j" . xref-find-definitions)
+         ("C-S-j" . xref-find-references)
+         ("C->" . xref-go-forward)
+         ("C-<" . xref-go-back)
+         ("C-S-<mouse-1>" . xref-find-definitions)
+         ("M-C-<mouse-1>" . xref-find-references)
+         ("<mouse-5>" . xref-go-forward)
+         ("<mouse-4>" . xref-go-back))
+  )
+
 (leaf *gud-mode
   :config
   (declare-function gud-print     "gud" (arg))
