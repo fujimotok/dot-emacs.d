@@ -100,6 +100,10 @@
   :bind (((kbd "C-;") . hs-toggle-hiding))
   :hook ((prog-mode-hook . hs-minor-mode)))
 
+(leaf ez-query-replace
+  :ensure t
+  :bind ("M-%" . ez-query-replace))
+
 
 ;;; System depended settings
 (leaf *windows-nt
