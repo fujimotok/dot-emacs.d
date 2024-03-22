@@ -377,6 +377,23 @@
   ;; tree-sitter-langs は1回だけインストールしてbinをコピーした後は消す
   (global-tree-sitter-mode))
 
+(leaf project
+  :doc "project root のオーバーライド。gitのrootでなく.project.elをrootとする。"
+  :init
+  (defun project-root-override (dir)
+    "Find DIR's project root by searching for a '.project.el' file.
+
+If this file exists, it marks the project root. For convenient compatibility
+with Projectile, '.projectile' is also considered a project root marker.
+
+https://blog.jmthornton.net/p/emacs-project-override"
+    (let ((root (locate-dominating-file dir ".project.el"))
+          (backend (ignore-errors (vc-responsible-backend dir))))
+      (when root (if (version<= emacs-version "28")
+                     (cons 'vc root)
+                   (list 'vc backend root)))))
+  :hook ((project-find-functions . project-root-override)))
+
 
 ;;; Programming langages settings
 (leaf markdown-mode
