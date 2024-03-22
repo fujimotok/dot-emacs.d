@@ -728,6 +728,8 @@
 (leaf *aichat
   :doc "bing aiと対話"
   :el-get xhcoding/emacs-aichat
-  :custom ((aichat-bingai-cookies-file . "~/.emacs.d/aichat-bingai-cookies-file.json")))
+  :custom ((aichat-bingai-cookies-file . "~/.emacs.d/aichat-bingai-cookies-file.json"))
+  :config
+  (aichat-copilot-set-mode-line))
 
 ;;; init.el ends here
