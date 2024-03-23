@@ -51,6 +51,38 @@
       :config (leaf el-get :ensure t)
       (leaf-keywords-init))))
 
+;;; System depended settings
+(leaf *windows-nt
+  :doc "Windows環境のみの設定"
+  :if (eq system-type 'windows-nt)
+  :config ;; win環境でsvnがsjisで吐くのでbufferも追従するように与える
+  (add-to-list
+   'process-coding-system-alist
+   '("[sS][vV][nN]" . sjis-dos))
+  (add-to-list
+   'process-coding-system-alist
+   '("csi" . sjis-dos))
+  (add-to-list
+   'process-coding-system-alist
+   '("python" . sjis-dos))
+  (add-to-list
+   'process-coding-system-alist
+   '("powershell" . sjis-dos))
+  (leaf tr-ime
+  :doc "NTEmacsでIMEの自動ON/OFFするためのパッケージ"
+  :if (eq system-type 'windows-nt)
+  :ensure t
+  :custom ((default-input-method . "W32-IME")
+           (w32-ime-mode-line-state-indicator . "Ａ")
+           (w32-ime-mode-line-state-indicator-list . '("-" "あ" "Ａ")))
+  :config (advice-add
+           'w32-ime-init-mode-line-display
+           :override (lambda ()))
+  (tr-ime-standard-install)
+  (w32-ime-initialize)
+  (set-default-coding-systems 'utf-8-unix) ;; 文字コードのデフォルト設定
+  ))
+
 ;;; Basic settings
 (leaf utils
   :doc "自作関数"
@@ -105,35 +137,6 @@
   :bind ("M-%" . ez-query-replace))
 
 
-;;; System depended settings
-(leaf *windows-nt
-  :doc "Windows環境のみの設定"
-  :if (eq system-type 'windows-nt)
-  :config ;; win環境でsvnがsjisで吐くのでbufferも追従するように与える
-  (add-to-list
-   'process-coding-system-alist
-   '("[sS][vV][nN]" . sjis-dos))
-  (add-to-list
-   'process-coding-system-alist
-   '("csi" . sjis-dos))
-  (add-to-list
-   'process-coding-system-alist
-   '("python" . sjis-dos))
-  (add-to-list
-   'process-coding-system-alist
-   '("powershell" . sjis-dos))
-  (leaf tr-ime
-  :doc "NTEmacsでIMEの自動ON/OFFするためのパッケージ"
-  :if (eq system-type 'windows-nt)
-  :ensure t
-  :custom ((default-input-method . "W32-IME")
-           (w32-ime-mode-line-state-indicator . "Ａ")
-           (w32-ime-mode-line-state-indicator-list . '("-" "あ" "Ａ")))
-  :config (advice-add
-           'w32-ime-init-mode-line-display
-           :override (lambda ()))
-  (tr-ime-standard-install)
-  (w32-ime-initialize)))
 
 
 ;;; Appearance settings
@@ -398,6 +401,7 @@ https://blog.jmthornton.net/p/emacs-project-override"
 ;;; Programming langages settings
 (leaf markdown-mode
   :doc "markdown用設定"
+  :ensure t
   :hook ((markdown-mode-hook . (lambda nil (outline-hide-sublevels 2))))
   :bind ((markdown-mode-map
           ("C-<return>" . markdown-insert-dwin)
