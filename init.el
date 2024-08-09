@@ -92,15 +92,8 @@
                       "/proc/sys/fs/binfmt_misc/WSLInterop"))
             (battery-wsl-init)))
 
-(leaf cus-start
+(leaf *builtin
   :doc "builtin機能の設定"
-  :bind (([C-wheel-up] . text-scale-increase)
-         ([C-wheel-down] . text-scale-decrease)
-         ((kbd "C-a") . move-beginning-alt)
-         ((kbd "C-<backspace>") . backward-delete-word)
-         ((kbd "C-;") . hs-toggle-hiding)
-         ((kbd "C-d") . forward-delete-char)
-         ((kbd "C-z") . undo))
   :custom `((scroll-preserve-screen-position . t)
             (ring-bell-function . 'ignore))
   :config
@@ -125,7 +118,19 @@
   (setq create-lockfiles nil)
 
   ;; フォント設定
-  (set-frame-font "ricty diminished-10.5"))
+  (set-frame-font "ricty diminished-10.5" nil t))
+
+(leaf *movepos
+  :doc "カーソル移動"
+  :bind (((kbd "C-a") . move-beginning-alt)
+         ((kbd "C-<backspace>") . backward-delete-word)
+         ((kbd "C-d") . forward-delete-char)
+         ((kbd "C-z") . undo)))
+
+(leaf *zoom
+  :doc "拡大率変更ショートカット"
+  :bind (([C-wheel-up] . text-scale-increase)
+         ([C-wheel-down] . text-scale-decrease)))
 
 (leaf *hs-minor-mode
   :doc "折り畳み・展開機能"
@@ -254,59 +259,49 @@
 
 
 ;;; Programming support settings
-(leaf company
-  :doc "補完機能パッケージ"
-  :ensure t
-  :bind ((company-mode-map
-          ("<tab>" . company-indent-or-complete-common))
-         (company-active-map
-          ("C-n" . company-select-next))
-         (company-active-map
-          ("C-p" . company-select-previous))
-         (company-active-map ("C-h"))
-         (company-active-map
-          ("C-S-h" . company-show-doc-buffer)))
-  :setq ((company-auto-expand . t)
-         (company-transformers
-          quote
-          (company-sort-by-backend-importance))
-         (company-idle-delay . nil)
-         (company-minimum-prefix-length . 2)
-         (company-selection-wrap-around . t)
-         (completion-ignore-case . t)
-         (company-dabbrev-downcase . nil)
-         (company-dabbrev-char-regexp . "[A-Za-z_][[:alnum:]_]*"))
-  :hook ((emacs-lisp-mode-hook . set-company-backend-lisp-mode)
-         (shell-mode-hook . set-company-backend-shell-mode))
+(leaf *completion
+  :doc "補完機能"
   :config
-  (with-eval-after-load
-      'company
-    ;; リストに直接置くと左から優先度して最初のbackendのみ使う。リストの要素にリスト渡すとグループと呼び、backendが同時に機能する。
-    (setq company-backends
-          '((company-dabbrev-code
-             company-dabbrev
-             company-files
-             company-capf
-             company-keywords))))
-  (defun set-company-backend-lisp-mode ()
-    (setq-local
-     company-backends
-     '((company-elisp))))  
-  (defun set-company-backend-shell-mode ()
-    (setq-local
-     company-backends
-     '((company-capf
-        company-files))))
-  (leaf company-web :ensure t)
-  (leaf company-box
+  (leaf corfu
+    :doc "COmpletion in Region FUnction"
     :ensure t
-    :custom ((company-box-scrollbar . nil))
-    :hook ((company-mode-hook . company-box-mode)))
-  (leaf company-quickhelp
+    :init
+    (global-corfu-mode t)
+    (corfu-popupinfo-mode t)
+    ;; windowsで?補完フレームが見切れる問題のハック
+    (defun default-line-height-filter-return (ret)
+      (+ ret 1))
+    (advice-add
+     'default-line-height
+     :filter-return
+     #'default-line-height-filter-return)
+    :custom ((corfu-auto . t)
+             (corfu-auto-delay . 0)
+             (corfu-auto-prefix . 2)
+             (corfu-popupinfo-delay . nil)) ; manual
+    :bind ((corfu-map
+            ("TAB" . corfu-insert)
+            ("<tab>" . corfu-insert)
+            ("RET" . nil)
+            ("<return>" . nil)
+            ("C-s" . corfu-insert-separator))))
+
+  (leaf cape
+    :doc "Completion At Point Extensions"
     :ensure t
-    :hook ((company-box-mode-hook . company-quickhelp-mode))
-    :custom ((company-quickhelp-delay . 1)))
-  (global-company-mode))
+    :config
+    (add-to-list 'completion-at-point-functions #'cape-file)
+    (add-to-list 'completion-at-point-functions #'cape-dabbrev)
+    (add-to-list 'completion-at-point-functions #'cape-keyword))
+
+  (leaf kind-icon
+    :doc "Append icon"
+    :ensure t
+    :after corfu
+    :config
+    (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter))
+  )
+
 
 (leaf flycheck
   :custom ((flycheck-check-syntax-automatically . '(mode-enabled save))
