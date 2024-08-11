@@ -392,6 +392,13 @@ https://blog.jmthornton.net/p/emacs-project-override"
                    (list 'vc backend root)))))
   :hook ((project-find-functions . project-root-override)))
 
+(leaf eglot-booster
+  :doc "lsp高速化パッケージ"
+  ;; https://github.com/blahgeek/emacs-lsp-booster/releases から実行ファイルDL
+  :when (executable-find "emacs-lsp-booster")
+  :el-get "jdtsmith/eglot-booster"
+  :global-minor-mode t)
+
 
 ;;; Programming langages settings
 (leaf markdown-mode
