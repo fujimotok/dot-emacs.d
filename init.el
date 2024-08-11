@@ -280,11 +280,7 @@
              (corfu-auto-prefix . 2)
              (corfu-popupinfo-delay . nil)) ; manual
     :bind ((corfu-map
-            ("TAB" . corfu-insert)
-            ("<tab>" . corfu-insert)
-            ("RET" . nil)
-            ("<return>" . nil)
-            ("C-s" . corfu-insert-separator))))
+           ("S-SPC" . corfu-insert-separator))))
 
   (leaf cape
     :doc "Completion At Point Extensions"
