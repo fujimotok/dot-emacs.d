@@ -592,6 +592,24 @@ https://blog.jmthornton.net/p/emacs-project-override"
             (defvar-local flycheck-check-syntax-automatically '(save))
             (flycheck-mode)))
 
+(leaf paredit
+  :doc "lisp"
+  :ensure t
+  :config
+  ;; pareditのデフォルト挙動に慣れないので欲しい関数だけをbindする
+  (defvar my-paredit-binds
+    '(("C-}" . paredit-forward-slurp-sexp)
+      ("C-{" . paredit-backward-slurp-sexp)
+      ("M-(" . paredit-wrap-round)
+      ("M-)" . paredit-splice-sexp)))
+  ;; :bind だとmode-mapが存在しないタイミングのためbind-keysを直接呼ぶ
+  (with-eval-after-load 'clojure-mode
+    (require 'paredit)
+    (eval `(bind-keys :map clojure-mode-map ,@my-paredit-binds)))
+  (with-eval-after-load 'lisp-mode
+    (require 'paredit)
+    (eval `(bind-keys :map lisp-mode-shared-map ,@my-paredit-binds))))
+
 
 ;;; Utilities
 (leaf dired
