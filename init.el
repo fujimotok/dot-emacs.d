@@ -751,4 +751,29 @@ https://blog.jmthornton.net/p/emacs-project-override"
   :config
   (aichat-copilot-set-mode-line))
 
+(leaf copilot
+  :doc "GitHub Copilot プラグイン"
+  :ensure nil
+  :el-get copilot-emacs/copilot.el
+  :config
+  ;; dependencies
+  (leaf editorconfig
+    :ensure t)
+  (leaf f
+    :ensure t)
+  (leaf s
+    :ensure t)
+  (leaf dash
+    :ensure t)
+  (defun my/copilot-tab ()
+    (interactive)
+    (or (copilot-accept-completion)
+        (indent-for-tab-command)))
+
+  (with-eval-after-load 'copilot
+    (define-key copilot-mode-map (kbd "<tab>") #'my/copilot-tab))
+  )
+
+
+
 ;;; init.el ends here
