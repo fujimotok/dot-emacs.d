@@ -64,6 +64,9 @@
    '("csi" . sjis-dos))
   (add-to-list
    'process-coding-system-alist
+   '("aider" . utf-8-unix))
+  (add-to-list
+   'process-coding-system-alist
    '("python" . sjis-dos))
   (add-to-list
    'process-coding-system-alist
@@ -762,13 +765,6 @@ https://blog.jmthornton.net/p/emacs-project-override"
   :doc "chrome拡張 ghosttext入れることでブラウザの入力をEmacsから行う"
   :ensure t)
 
-(leaf *aichat
-  :doc "bing aiと対話"
-  :el-get xhcoding/emacs-aichat
-  :custom ((aichat-bingai-cookies-file . "~/.emacs.d/aichat-bingai-cookies-file.json"))
-  :config
-  (aichat-copilot-set-mode-line))
-
 (leaf copilot
   :doc "GitHub Copilot プラグイン"
   :ensure nil
@@ -792,6 +788,8 @@ https://blog.jmthornton.net/p/emacs-project-override"
     (define-key copilot-mode-map (kbd "<tab>") #'my/copilot-tab))
   )
 
-
+(leaf aider
+    :doc "Aider プラグイン"
+    :ensure t)
 
 ;;; init.el ends here
