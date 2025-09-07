@@ -792,4 +792,8 @@ https://blog.jmthornton.net/p/emacs-project-override"
     :doc "Aider プラグイン"
     :ensure t)
 
+(leaf st-mode
+  :doc "Structured Text"
+  :el-get fujimotok/st-mode)
+
 ;;; init.el ends here
