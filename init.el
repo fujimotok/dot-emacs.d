@@ -257,7 +257,34 @@
   (leaf embark
     :ensure t
     :bind (("M-a". embark-act))
-    :custom ((embark-indicators . '(embark-minimal-indicator embark-highlight-indicator))))
+    :custom ((embark-indicators . '(embark-minimal-indicator embark-highlight-indicator))
+             (embark-prompter . 'embark-completing-read-prompter))
+    :config
+    ;; embarkからshellを起動
+    (defun embark-shell (file)
+      "Open Shell in path"
+      (interactive "fFile: ")
+       (let ((default-directory (file-name-directory file)))
+         (shell)))
+    (with-eval-after-load 'embark
+      (define-key embark-file-map (kbd "s") #'embark-shell))
+    ;; ファイルパスのコピーで'~'を展開
+    (defun embark-kill-new (file)
+      "Run `kell-new` on FILE, expanding `~` only when called via Embark."
+      (interactive "fFile: ")
+      (kill-new (expand-file-name file)))
+    (with-eval-after-load 'embark
+      (define-key embark-file-map (kbd "k") #'embark-kill-new))
+    ;; リージョンをファイルパスとして認識するようにする
+    (defun embark-target-filepath-in-region ()
+      "If region looks like a file path, treat it as a `file` target."
+      (when (use-region-p)
+        (let ((text (buffer-substring-no-properties
+                     (region-beginning) (region-end))))
+          (when (file-exists-p text)
+            (list 'file text)))))
+    (with-eval-after-load 'embark
+     (add-hook 'embark-target-finders #'embark-target-filepath-in-region)))
   )
 
 
